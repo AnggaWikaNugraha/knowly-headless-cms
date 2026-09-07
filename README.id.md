@@ -352,6 +352,7 @@ Pisahkan tipe response API dari props komponen UI jika memang sesuai.
 |---|---|
 | **Frontend** (Astro) | [`frontend/README.id.md`](frontend/README.id.md) — fitur utama, SEO, penanganan error |
 | **Backend** (Strapi) | [`backend/README.id.md`](backend/README.id.md) — content model, relasi, admin, CORS & keamanan |
+| **Arsitektur** | [`docs/ARCHITECTURE.id.md`](docs/ARCHITECTURE.id.md) — Fase 1: arsitektur lengkap, keputusan dan alasannya |
 
 ---
 

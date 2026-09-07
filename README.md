@@ -352,6 +352,7 @@ Keep API response types separate from UI component props when appropriate.
 |---|---|
 | **Frontend** (Astro) | [`frontend/README.md`](frontend/README.md) — core features, SEO, error handling |
 | **Backend** (Strapi) | [`backend/README.md`](backend/README.md) — content models, relationships, admin, CORS & security |
+| **Architecture** | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — Phase 1: full architecture, decisions and rationale |
 
 ---
 
