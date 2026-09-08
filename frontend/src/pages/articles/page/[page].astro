@@ -1,0 +1,44 @@
+---
+import type { GetStaticPaths } from 'astro';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ArticleGrid from '../../../components/astro/ArticleGrid.astro';
+import EmptyState from '../../../components/astro/EmptyState.astro';
+import Pagination from '../../../components/astro/Pagination.astro';
+import { getArticles } from '../../../services/strapi/articles';
+import { site } from '../../../config/site';
+
+/**
+ * Halaman 2 ke atas. Halaman 1 ada di /articles.
+ *
+ * Pagination sengaja tidak memakai [...page] di dalam /articles/, karena rest
+ * route di sana menyapu seluruh /articles/* dan menelan /articles/<slug>.
+ */
+export const getStaticPaths: GetStaticPaths = async () => {
+  const { pagination } = await getArticles(1, site.pageSize);
+  const paths = [];
+  for (let p = 2; p <= pagination.pageCount; p += 1) {
+    paths.push({ params: { page: String(p) } });
+  }
+  return paths;
+};
+
+const current = Number(Astro.params.page);
+const { items, pagination } = await getArticles(current, site.pageSize);
+---
+<BaseLayout title={`Artikel — halaman ${current}`} description={`Semua artikel di ${site.name}.`}>
+  <header class="mb-10">
+    <h1 class="text-3xl font-bold tracking-tight text-gray-50">Artikel</h1>
+    <p class="mt-2 text-gray-400">{pagination.total} tulisan</p>
+  </header>
+
+  {items.length > 0
+    ? <ArticleGrid articles={items} />
+    : <EmptyState title="Belum ada artikel di halaman ini" />}
+
+  <Pagination
+    currentPage={current}
+    lastPage={pagination.pageCount}
+    prevUrl={current === 2 ? '/articles' : `/articles/page/${current - 1}`}
+    nextUrl={current < pagination.pageCount ? `/articles/page/${current + 1}` : undefined}
+  />
+</BaseLayout>

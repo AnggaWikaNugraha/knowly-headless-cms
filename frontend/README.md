@@ -20,6 +20,8 @@ Astro frontend for the [Fullstack Headless CMS](../README.md) — the public web
 ## Table of Contents
 
 - [Architecture: Astro vs UI Frameworks](#architecture-astro-vs-ui-frameworks)
+- [Routing](#routing)
+- [Theme](#theme)
 - [Core Features](#core-features)
 - [SEO](#seo)
 - [Error Handling](#error-handling)
@@ -181,6 +183,51 @@ Before creating a component, ask one question:
 **No → `.astro`. Yes → a framework component, in whichever framework that page already owns.**
 
 Expect roughly a dozen Astro components against three framework ones. Article detail, category, tag and author pages should ship **0 kB of JavaScript**.
+
+## Routing
+
+| File | URL | Generated from |
+|---|---|---|
+| `pages/index.astro` | `/` | — |
+| `pages/articles/index.astro` | `/articles` | page 1 of the listing |
+| `pages/articles/page/[page].astro` | `/articles/page/2`, … | pages 2+ |
+| `pages/articles/[slug].astro` | `/articles/<slug>` | every article slug |
+| `pages/categories/[slug].astro` | `/categories/<slug>` | every category |
+| `pages/tags/[slug].astro` | `/tags/<slug>` | every tag |
+| `pages/authors/[slug].astro` | `/authors/<slug>` | every author |
+| `pages/404.astro` | `/404` | — |
+
+Everything except `/` and `/404` is generated from Strapi at build time, so the page count follows the content.
+
+> [!WARNING]
+> **Pagination deliberately lives under `/articles/page/`, not `/articles/[...page]`.**
+>
+> A rest route (`[...page].astro`) placed next to `[slug].astro` in the same directory claims the whole `/articles/*` space, including article slugs. The static build hides this — both paths are generated explicitly and never compete — but the dev server matches routes dynamically, and there the rest route wins. The symptom is a 404 on every article detail page in `npm run dev` while `npm run build` produces those exact pages without complaint.
+>
+> Keeping the two in separate directories removes the ambiguity entirely.
+
+---
+
+## Theme
+
+This site is the blog section of an existing Next.js portfolio, so its theme is matched to it rather than designed independently.
+
+| Token | Value |
+|---|---|
+| Background | `#030712` (gray-950) |
+| Foreground | `#f9fafb` (gray-50) |
+| Font | Geist Variable / Geist Mono Variable, self-hosted |
+| Cards | `bg-gray-900`, `border-gray-700`, `rounded-lg` |
+| Content area | gradient `from-gray-900 to-gray-800` |
+
+> [!IMPORTANT]
+> The site is **dark-only**. There are no `dark:` variants anywhere, and adding one would break the match — the portfolio has no light mode to match against.
+
+Fonts are self-hosted through `@fontsource-variable/geist` rather than loaded from Google Fonts, so no render-blocking third-party request sits in front of the first paint.
+
+Article typography (`.prose-knowly` in `src/styles/global.css`) is written by hand instead of using `@tailwindcss/typography`. Only headings, lists, blockquotes, code and images needed styling, which is not worth a dependency under the project's minimal-dependencies rule.
+
+---
 
 ## Core Features
 

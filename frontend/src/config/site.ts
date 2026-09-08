@@ -6,7 +6,7 @@ export const site = {
   name: 'Knowly',
   tagline: 'Catatan arsitektur web, performa, dan hal-hal yang baru terasa saat deploy',
   description:
-    'Knowledge base tentang arsitektur web modern — Astro, headless CMS, rendering, dan performa. Dibangun dengan Astro, Strapi, dan PostgreSQL.',
+    'Knowledge base tentang arsitektur web modern',
   locale: 'id_ID',
   lang: 'id',
   /** Jumlah artikel per halaman pada daftar artikel. */

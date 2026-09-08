@@ -1,0 +1,40 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ArticleGrid from '../../components/astro/ArticleGrid.astro';
+import EmptyState from '../../components/astro/EmptyState.astro';
+import ErrorState from '../../components/astro/ErrorState.astro';
+import Pagination from '../../components/astro/Pagination.astro';
+import { getArticles } from '../../services/strapi/articles';
+import { site } from '../../config/site';
+import type { Article, Pagination as PaginationMeta } from '../../types/strapi';
+
+let items: Article[] = [];
+let meta: PaginationMeta = { page: 1, pageSize: site.pageSize, pageCount: 0, total: 0 };
+let failed = false;
+
+try {
+  const res = await getArticles(1, site.pageSize);
+  items = res.items;
+  meta = res.pagination;
+} catch {
+  failed = true;
+}
+---
+<BaseLayout title="Artikel" description={`Semua artikel di ${site.name}.`}>
+  <header class="mb-10">
+    <h1 class="text-3xl font-bold tracking-tight text-gray-50">Artikel</h1>
+    <p class="mt-2 text-gray-400">{meta.total} tulisan</p>
+  </header>
+
+  {failed && <ErrorState />}
+
+  {!failed && (items.length > 0
+    ? <ArticleGrid articles={items} />
+    : <EmptyState title="Belum ada artikel" />)}
+
+  <Pagination
+    currentPage={1}
+    lastPage={meta.pageCount}
+    nextUrl={meta.pageCount > 1 ? '/articles/page/2' : undefined}
+  />
+</BaseLayout>

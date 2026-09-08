@@ -14,195 +14,55 @@ const AUTHOR = {
 
 const CATEGORIES = [
   { name: 'Arsitektur', slug: 'arsitektur', description: 'Keputusan struktural dan alasan di baliknya.' },
-  { name: 'Engineering', slug: 'engineering', description: 'Catatan implementasi dari kode yang benar-benar jalan.' },
-  { name: 'Performa', slug: 'performa', description: 'Kecepatan, ukuran bundle, dan hal yang dirasakan pengunjung.' },
 ];
 
 const TAGS = [
-  { name: 'Astro', slug: 'astro' },
-  { name: 'Strapi', slug: 'strapi' },
-  { name: 'SEO', slug: 'seo' },
+  { name: 'Microfrontend', slug: 'microfrontend' },
+  { name: 'Module Federation', slug: 'module-federation' },
+  { name: 'Next.js', slug: 'nextjs' },
+  { name: 'React', slug: 'react' },
   { name: 'TypeScript', slug: 'typescript' },
-  { name: 'PostgreSQL', slug: 'postgresql' },
 ];
+
+const ARTICLE_MICROFRONTEND = "## Kenapa satu frontend akhirnya terasa sesak\n\nAplikasi frontend yang tumbuh bersama produknya cepat atau lambat sampai di titik yang sama: satu repositori, belasan area fitur, dan satu pipeline build yang harus dilewati semua orang.\n\nGejalanya khas. Build makin lama sampai terasa di setiap perubahan kecil. Tim yang menggarap area berbeda saling menunggu di antrean rilis. Menaikkan versi satu library berarti menguji ulang seluruh aplikasi, jadi upgrade ditunda, lalu menumpuk.\n\nMicrofrontend menjawab persoalan itu dengan cara yang sederhana diucapkan tapi tidak sederhana dijalankan: **pecah aplikasinya, lalu satukan lagi di browser saat runtime.**\n\n## Host dan remote\n\nModule Federation punya dua peran.\n\n**Remote** adalah aplikasi yang menerbitkan sebagian dirinya untuk dipakai orang lain. **Host** adalah aplikasi yang memuat bagian itu saat dijalankan.\n\n```js\n// di sisi remote — mengumumkan apa yang boleh dipakai\nexposes: {\n  './base': './containers/reports/index.tsx',\n  './globals': './styles/global.exposes.ts',\n}\n\n// di sisi host — menyatakan dari mana mengambilnya\nremotes: {\n  designSystem: 'designSystem@https://…/remoteEntry.js',\n}\n```\n\nYang jarang disebut: **satu aplikasi bisa menjadi keduanya sekaligus.** Modul fitur mengekspos dirinya untuk dipasang di shell, sekaligus mengonsumsi design system sebagai remote. Yang terbentuk bukan pohon host-remote yang rapi, melainkan jaring.\n\nKonsekuensinya perlu disadari sejak awal: begitu topologinya jadi jaring, tidak ada lagi satu tempat yang tahu keseluruhan sistem. Diagram arsitektur berhenti jadi dokumen dan mulai jadi kebutuhan.\n\n## Yang sebaiknya diekspos\n\nGodaan pertama adalah mengekspos banyak hal — komponen ini, util itu, hook satu lagi. Setiap yang diekspos adalah kontrak publik, dan setiap kontrak publik harus dijaga kompatibilitasnya.\n\nYang bertahan baik biasanya berbentuk satu pintu masuk per modul:\n\n```js\nexposes: {\n  './base': './containers/laporan/index.tsx',\n}\n```\n\nSatu komponen container, satu tanggung jawab. Isinya boleh berubah bebas selama bentuk pintunya tetap. Semakin sedikit yang diekspos, semakin longgar keterikatannya.\n\n## Shared dependency: bagian yang paling sering salah\n\nIni sumber bug paling membingungkan di microfrontend.\n\nKalau host dan remote sama-sama membawa React sendiri, browser memuat **dua salinan React**. Hook langsung rusak dengan pesan yang tidak menunjuk ke akar masalahnya — biasanya \"invalid hook call\", yang membuat orang mencari-cari di komponennya padahal masalahnya di konfigurasi build.\n\nKarena itu React wajib singleton:\n\n```js\nshared: {\n  react: { singleton: true, requiredVersion: false },\n  'react-dom': { singleton: true, requiredVersion: false },\n  i18next: { singleton: true, requiredVersion: false },\n  'react-i18next': { singleton: true, requiredVersion: false },\n}\n```\n\nAturan praktisnya: **apa pun yang menyimpan state global harus singleton.** React dan React DOM karena hook-nya. Library i18n karena instance bahasanya. Provider autentikasi karena sesinya. Router karena riwayat navigasinya.\n\nLibrary tanpa state — pemformat tanggal, util validasi — tidak masalah punya dua salinan. Boros beberapa kilobyte, tapi tidak merusak apa pun.\n\n## `requiredVersion: false`, dan apa yang sebenarnya ditukar\n\nIni setelan yang perlu dipahami betul sebelum dipakai.\n\nSecara default, Module Federation memeriksa apakah versi dependensi bersama itu cocok, dan memperingatkan kalau tidak. Menyetel `requiredVersion: false` **mematikan pemeriksaan itu**.\n\nDampaknya nyata: build berhenti rewel, dan tiap modul bisa naik versi mengikuti jadwalnya sendiri tanpa memblokir yang lain. Untuk banyak tim yang berjalan paralel, itu bukan kemewahan — itu syarat supaya rilis tidak saling mengunci.\n\nTapi yang ditukar juga nyata. Ketidakcocokan versi tidak hilang, cuma **pindah dari waktu build ke waktu runtime**. Kalau satu modul mengandalkan API yang belum ada di versi yang akhirnya dimuat, kegagalannya baru muncul di browser pengguna, dan pesannya tidak akan menyebut soal versi.\n\nSetelan ini masuk akal saat versi dependensi bersama benar-benar dijaga selaras lewat cara lain — konvensi tim, dependabot terpusat, atau paket internal yang mengunci versinya. Tanpa itu, yang terjadi adalah menunda masalah, bukan menyelesaikannya.\n\n## Berbagi tipe antar microfrontend\n\nBagian yang menurut saya paling kurang dibicarakan.\n\nModul remote dimuat saat runtime, jadi TypeScript tidak punya cara alami mengetahui bentuknya saat kompilasi. Tanpa penanganan khusus, impor lintas microfrontend berakhir sebagai `any` — dan seluruh keuntungan TypeScript hilang persis di batas yang paling rawan.\n\nModule Federation versi baru bisa menerbitkan berkas deklarasi tipe bersama bundle-nya, lalu host mengunduhnya:\n\n```js\ndts: {\n  consumeTypes: {\n    consumeAPITypes: true,\n    remoteTypeUrls: {\n      designSystem: {\n        api: 'https://…/static/@mf-types.d.ts',\n        zip: 'https://…/static/@mf-types.zip',\n      },\n    },\n  },\n}\n```\n\nHasilnya, mengubah props sebuah komponen di design system langsung memunculkan error di modul yang memakainya — sebelum di-deploy, bukan setelah.\n\nAda harganya: tipe itu diambil lewat jaringan saat build, jadi remote yang sedang mati membuat build lokal ikut terganggu. Perlu ada jalur cadangan agar developer tidak terblokir.\n\n## Yang jarang disebut brosur\n\n**Debugging melintasi batas aplikasi.** Stack trace berhenti di tepi bundle remote. Source map harus benar di setiap aplikasi, kalau tidak yang terlihat cuma kode terminifikasi.\n\n**Versi yang menyimpang diam-diam.** Dua modul bisa berjalan berbulan-bulan dengan versi library berbeda tanpa gejala, sampai satu perilaku halus berubah dan tidak ada yang menghubungkannya dengan versi.\n\n**Batas jaringan.** Tiap remote adalah permintaan HTTP tambahan. Terlalu banyak modul kecil dan waktu muat justru memburuk dibanding monolit yang ditinggalkan.\n\n**Duplikasi CSS.** Kalau tiap remote membawa styling-nya sendiri, aturan yang sama terkirim berkali-kali — dan bisa saling menimpa dengan urutan yang sulit ditebak.\n\nTak satu pun dari ini alasan untuk tidak memakai microfrontend. Tapi semuanya biaya nyata, dan sebaiknya dipilih sadar, bukan ditemukan belakangan.\n\n## Kapan ini sepadan\n\nMicrofrontend menyelesaikan **masalah organisasi**, bukan masalah teknis. Dia layak ketika beberapa tim harus merilis secara independen, dan koordinasi rilis sudah jadi hambatan nyata.\n\nUntuk satu tim yang mengerjakan satu produk, dia menambah lapisan build, lapisan deployment, dan seluruh kelas bug baru — tanpa memberi apa pun sebagai gantinya. Monorepo dengan build cache biasanya jauh lebih tepat.\n\nPertanyaan yang benar bukan \"apakah aplikasi saya cukup besar\", melainkan **\"apakah tim saya saling menunggu\"**. Kalau jawabannya belum, tunggu sampai iya.\n";
+
+const SEO_MICROFRONTEND = {"metaTitle": "Microfrontend dengan Module Federation", "metaDescription": "Cara Module Federation membagi satu frontend jadi banyak aplikasi: host dan remote, shared dependency, berbagi tipe, dan biaya yang jarang disebut.", "keywords": "microfrontend, module federation, arsitektur frontend, react, next.js"};
 
 const ARTICLES = [
   {
-    title: 'Memahami Islands Architecture di Astro',
-    slug: 'memahami-islands-architecture-di-astro',
-    category: 'engineering',
-    tags: ['astro', 'typescript'],
-    featured: true,
-    excerpt: 'Astro merender halaman jadi HTML di server, lalu menghidupkan hanya bagian yang benar-benar butuh interaksi. Sisanya tidak mengirim JavaScript sama sekali.',
-    content: `## Halaman sebagai lautan HTML
-
-Di Astro, sebuah halaman pada dasarnya HTML statis. Komponen \`.astro\` dijalankan sekali di server, menghasilkan markup jadi, lalu kodenya tidak ikut terkirim ke browser.
-
-Yang membuatnya berbeda dari static site generator biasa adalah **island**: potongan kecil yang boleh hidup.
-
-## Kapan sebuah island dibenarkan
-
-Satu pertanyaan sudah cukup:
-
-> Apakah ada yang harus berubah di layar tanpa berpindah halaman?
-
-Kotak pencarian yang hasilnya berubah saat diketik — ya. Pagination yang cukup dengan \`<a href>\` — tidak. Godaan terbesar justru pada komponen yang *terlihat* interaktif padahal sebenarnya cuma tautan.
-
-## Directive menentukan biayanya
-
-\`\`\`astro
-<SearchBox />                 <!-- HTML mati, 0 kB JS -->
-<SearchBox client:visible />  <!-- hidup, JS dimuat saat terlihat -->
-\`\`\`
-
-Yang mengirim JavaScript adalah directive-nya, bukan ekstensi filenya. Komponen React tanpa \`client:*\` tetap dirender jadi HTML statis dan tidak menambah satu byte pun.`,
-    seo: {
-      metaTitle: 'Memahami Islands Architecture di Astro',
-      metaDescription: 'Bagaimana Astro merender HTML di server dan hanya menghidupkan bagian yang butuh interaksi, sehingga halaman konten tidak mengirim JavaScript.',
-      keywords: 'astro, islands architecture, hydration, performa web',
-    },
-  },
-  {
-    title: 'Kenapa Headless CMS, Bukan WordPress',
-    slug: 'kenapa-headless-cms-bukan-wordpress',
+    title: 'Microfrontend dengan Module Federation: Membagi Satu Frontend Jadi Banyak Aplikasi',
+    slug: 'microfrontend-dengan-module-federation',
     category: 'arsitektur',
-    tags: ['strapi', 'astro'],
+    tags: ['microfrontend', 'module-federation', 'nextjs', 'react', 'typescript'],
     featured: true,
-    excerpt: 'WordPress punya frontend sendiri dan kamu boleh memilih tidak memakainya. Headless CMS bahkan tidak punya pilihan itu — dan justru di situ keuntungannya.',
-    content: `## Perbedaan yang sering disalahpahami
-
-WordPress adalah CMS terkopel: dia punya theme, template, dan bisa membangun situs utuh sendirian. Strapi tidak punya lapisan itu sama sekali.
-
-Jadi "tidak memakai frontend Strapi" bukan keputusan — memang tidak ada yang bisa dipakai.
-
-## Yang didapat dari pemisahan
-
-Backend berhenti di JSON. Dia tidak tahu situsmu berwarna apa, berapa halamannya, atau apakah pengunjungnya browser atau aplikasi mobile.
-
-Konsekuensinya: mengganti seluruh frontend tidak menyentuh backend sedikit pun.
-
-## Harganya
-
-Dua aplikasi untuk dijalankan, dua tempat untuk dideploy, dan satu lapisan API yang harus dirawat. Untuk blog pribadi lima halaman, ini berlebihan. Untuk sistem yang frontend-nya mungkin berubah, ini murah.`,
-    seo: {
-      metaTitle: 'Kenapa Headless CMS, Bukan WordPress',
-      metaDescription: 'Perbedaan CMS terkopel dan headless, apa yang didapat dari memisahkan backend dari tampilan, dan kapan pemisahan itu tidak sepadan.',
-      keywords: 'headless cms, strapi, wordpress, arsitektur',
-    },
-  },
-  {
-    title: 'SSG dan SSR: Kapan Memilih yang Mana',
-    slug: 'ssg-dan-ssr-kapan-memilih-yang-mana',
-    category: 'performa',
-    tags: ['astro', 'seo'],
-    featured: false,
-    excerpt: 'Keduanya mengirim HTML lengkap ke browser. Yang membedakan cuma satu hal: kapan HTML itu dibuat.',
-    content: `## Bedanya satu hal saja
-
-**SSG** membuat HTML sekali, saat build. Semua pengunjung menerima file yang sama.
-
-**SSR** membuatnya tiap kali diminta. Selalu terbaru, tapi setiap kunjungan menuntut kerja server.
-
-Keduanya mengirim HTML utuh — itu yang memisahkan keduanya dari client-side rendering.
-
-## Aturan memilihnya
-
-> Bisa ditentukan saat build → SSG. Baru diketahui saat request → SSR.
-
-"Baru diketahui saat request" artinya query parameter, cookie, siapa yang login, atau jam berapa sekarang. Halaman pencarian jelas masuk kategori itu: tidak mungkin mem-build halaman untuk semua kemungkinan kata kunci.
-
-## Yang tidak langsung terlihat
-
-Kalau halaman konten sudah statis, backend praktis menganggur. Dia hanya dihubungi saat build. Itu berarti server bisa turun ke nol instance, dan biayanya ikut turun.
-
-Harganya: menerbitkan artikel tidak langsung tayang — harus menunggu build berikutnya.`,
-    seo: {
-      metaTitle: 'SSG dan SSR: Kapan Memilih yang Mana',
-      metaDescription: 'Perbedaan static site generation dan server-side rendering, aturan sederhana untuk memilih, dan konsekuensi biaya yang jarang dibahas.',
-      keywords: 'ssg, ssr, rendering, astro, performa',
-    },
-  },
-  {
-    title: 'Menghubungkan Astro ke Strapi lewat REST API',
-    slug: 'menghubungkan-astro-ke-strapi-lewat-rest-api',
-    category: 'engineering',
-    tags: ['astro', 'strapi', 'typescript'],
-    featured: false,
-    excerpt: 'Satu service layer, satu tempat memanggil fetch, dan komponen yang tidak perlu tahu bentuk respons Strapi.',
-    content: `## Jangan sebar fetch
-
-Godaan pertama saat menyambungkan CMS adalah memanggil \`fetch()\` langsung di komponen yang membutuhkannya. Itu terasa cepat, sampai bentuk respons berubah dan kamu harus mencarinya di dua belas tempat.
-
-Semua panggilan lewat satu lapisan:
-
-\`\`\`text
-src/services/strapi/
-├── client.ts        satu-satunya fetch() di seluruh codebase
-├── articles.ts
-├── categories.ts
-└── tags.ts
-\`\`\`
-
-## Yang dipegang client
-
-Base URL dari environment, penyusunan query string, timeout lewat \`AbortSignal\`, pemetaan respons non-2xx menjadi error bertipe, dan normalisasi envelope \`data\`/\`meta\`.
-
-Setelah itu komponen cukup menerima objek biasa.
-
-## Populate secukupnya
-
-\`populate=*\` menarik semua relasi dan semua ukuran gambar pada setiap request. Halaman daftar biasanya cuma butuh gambar sampul, nama penulis, dan slug kategori.
-
-Tiap fungsi mendeklarasikan populate-nya sendiri.`,
-    seo: {
-      metaTitle: 'Menghubungkan Astro ke Strapi lewat REST API',
-      metaDescription: 'Menyusun service layer yang rapi untuk Strapi REST API di Astro, dan kenapa populate harus selalu eksplisit.',
-      keywords: 'astro, strapi, rest api, service layer',
-    },
-  },
-  {
-    title: 'Nol Kilobyte JavaScript, dan Cara Membuktikannya',
-    slug: 'nol-kilobyte-javascript-dan-cara-membuktikannya',
-    category: 'performa',
-    tags: ['astro', 'seo', 'postgresql'],
-    featured: false,
-    excerpt: 'Klaim "tanpa JavaScript" gampang diucapkan. Lebih baik dibuka HTML hasil build-nya dan dihitung sendiri.',
-    content: `## Jangan percaya, periksa
-
-Setelah build, buka file HTML yang dihasilkan dan cari tag \`<script>\`. Kalau tidak ada, klaimnya benar.
-
-\`\`\`html
-<head><link rel="stylesheet" href="/_astro/index.css"></head>
-<body><h1>Judul artikel</h1></body>
-\`\`\`
-
-Tidak ada script sama sekali. Framework memang ikut dikompilasi ke folder aset, tapi tidak ada halaman yang memuatnya selama tidak ada island di sana.
-
-## Kenapa ini berpengaruh
-
-Pengunjung dengan jaringan lambat melihat teks begitu HTML sampai, bukan setelah menunggu bundle diunduh dan dieksekusi.
-
-Crawler pun begitu. Bot preview tautan di aplikasi pesan umumnya tidak menjalankan JavaScript sama sekali — halaman yang bergantung padanya tampil kosong saat dibagikan.
-
-## Batasnya
-
-Nol kilobyte hanya berlaku untuk halaman tanpa island. Halaman pencarian tetap membawa runtime framework-nya, dan itu memang harga yang dibayar untuk interaksi.`,
-    seo: {
-      metaTitle: 'Nol Kilobyte JavaScript, dan Cara Membuktikannya',
-      metaDescription: 'Cara memverifikasi klaim nol JavaScript dari HTML hasil build, kenapa itu penting untuk SEO dan jaringan lambat, serta batasnya.',
-      keywords: 'performa web, javascript, astro, core web vitals',
-    },
+    excerpt: "Catatan arsitektur dari sistem microfrontend yang sedang saya bangun. Implementasinya masih berjalan, tapi keputusan arsitekturnya sudah mengendap — termasuk bagian yang baru terasa setelah dijalankan.",
+    content: ARTICLE_MICROFRONTEND,
+    seo: SEO_MICROFRONTEND,
   },
 ];
 
 async function seed(strapi) {
+  const reset = process.argv.includes('--reset');
+
+  if (reset) {
+    // Hapus artikel, kategori, dan tag. Author dan media sengaja dipertahankan.
+    for (const uid of ['api::article.article', 'api::category.category', 'api::tag.tag']) {
+      const docs = await strapi.documents(uid).findMany({ fields: ['documentId'], limit: 500 });
+      for (const d of docs) await strapi.documents(uid).delete({ documentId: d.documentId });
+      strapi.log.info(`[seed] reset: ${docs.length} dokumen dihapus dari ${uid}`);
+    }
+  }
+
   const existing = await strapi.documents('api::article.article').count();
   if (existing > 0) {
-    strapi.log.info(`[seed] Sudah ada ${existing} artikel — dilewati, tidak ada yang diubah.`);
+    strapi.log.info(`[seed] Sudah ada ${existing} artikel — dilewati. Pakai --reset untuk menimpa.`);
     return;
   }
 
-  const author = await strapi.documents('api::author.author').create({ data: AUTHOR });
+  const existingAuthors = await strapi.documents('api::author.author').findMany({ limit: 1 });
+  const author = existingAuthors.length
+    ? existingAuthors[0]
+    : await strapi.documents('api::author.author').create({ data: AUTHOR });
   strapi.log.info(`[seed] Author: ${author.name}`);
 
   const categoryBySlug = {};
@@ -244,10 +104,16 @@ async function seed(strapi) {
   try {
     await seed(app);
   } finally {
-    // Penutupan connection pool kadang melempar "aborted" pada koneksi yang
-    // sudah tidak dipakai. Seluruh penulisan sudah selesai di titik ini, jadi
-    // error saat teardown tidak boleh membuat exit code jadi gagal.
+    // Menutup connection pool melempar "aborted" pada koneksi yang masih
+    // menunggu. Rejection itu mengambang di dalam tarn — bukan dari promise
+    // destroy() — jadi .catch() tidak bisa menjangkaunya dan Node mencetak
+    // stack trace yang terlihat seperti crash padahal seed sudah berhasil.
+    //
+    // Handler dipasang di sini saja, bukan di awal script, supaya error
+    // sungguhan selama proses seed tetap muncul.
+    process.on('unhandledRejection', () => {});
     await app.destroy().catch(() => {});
+    process.exit(0);
   }
 })().catch((err) => {
   console.error('[seed] GAGAL:', err.message);

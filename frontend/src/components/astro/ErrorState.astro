@@ -1,12 +1,12 @@
 ---
 /**
  * Ditampilkan saat Strapi tidak bisa dihubungi.
- * Sengaja tidak memuat detail teknis — pesan internal tidak boleh sampai ke pengunjung.
+ * Tidak memuat detail teknis — pesan internal tidak boleh sampai ke pengunjung.
  */
 interface Props { title?: string; }
 const { title = 'Konten sedang tidak bisa dimuat' } = Astro.props;
 ---
-<div class="rounded-lg border border-amber-300 bg-amber-50 px-6 py-12 text-center dark:border-amber-900/50 dark:bg-amber-950/30">
-  <p class="font-medium text-amber-900 dark:text-amber-200">{title}</p>
-  <p class="mt-2 text-sm text-amber-800/80 dark:text-amber-300/70">Silakan coba lagi beberapa saat lagi.</p>
+<div class="rounded-lg border border-amber-800/60 bg-amber-950/40 px-6 py-12 text-center">
+  <p class="font-medium text-amber-200">{title}</p>
+  <p class="mt-2 text-sm text-amber-300/70">Silakan coba lagi beberapa saat lagi.</p>
 </div>

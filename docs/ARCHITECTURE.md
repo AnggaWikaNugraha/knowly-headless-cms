@@ -41,6 +41,7 @@ Seven points where I had to choose, or where the root README does not yet cover 
 | D5 | **Docker base image** | `node:22-slim` (Debian), not Alpine | Strapi's `sharp` dependency is painful to build on Alpine; costs ~40 MB more image |
 | D6 | **Cloud Run region** | `asia-southeast2` (Jakarta) | Lowest latency for an Indonesian audience; `asia-southeast1` (Singapore) is the alternative |
 | D7 | **Node version** | Pin Node 22 LTS via `.nvmrc` | This machine runs Node 24, which is outside Strapi 5's supported matrix — see [Blockers](#blockers-before-phase-2) |
+| D8 | **Portfolio integration** | Served as `/blogs` on the existing Next.js portfolio via a rewrite; theme matched to it | Keeps this app standalone, so the islands and service layer still stand as portfolio work. The alternative — the portfolio fetching Strapi directly — would discard this entire frontend |
 
 D2 is the one I would flag hardest: it is a correctness problem, not a preference. Everything else is a trade-off you could reasonably decide differently.
 
@@ -428,6 +429,23 @@ Cloud Run connects to Cloud SQL with `--add-cloudsql-instances`; no credential f
 **Publish → live.** A Strapi webhook on entry publish and unpublish calls a Vercel Deploy Hook, which rebuilds and redeploys the static pages. Editors see changes after a build, not instantly. That is the trade-off in [D1](#0-decisions-that-need-your-approval), and the alternative — full server rendering — costs a Cloud Run round trip on every page view instead.
 
 Pull requests get preview deployments automatically, pointed at the same Strapi instance.
+
+### Serving under the portfolio's `/blogs`
+
+This site is not a standalone destination. It becomes the blog section of an existing Next.js portfolio (Tailwind 4, deployed on Vercel), reached at `situs.com/blogs/*` through a rewrite:
+
+```js
+// next.config.js in the portfolio
+async rewrites() {
+  return [{ source: '/blogs/:path*', destination: 'https://<this-app>.vercel.app/:path*' }];
+}
+```
+
+Two changes follow from that, both due at Phase 8: `base: '/blogs'` in `astro.config.mjs` so internal links resolve under the prefix, and the portfolio's navbar entry pointing at `/blogs` instead of its old blog page.
+
+The portfolio's existing blog page turned out to be a stub — hardcoded sample data that the component discards, no API route, no table in its MySQL database — so nothing needs migrating. That page and its components can simply be deleted.
+
+The theme is matched to the portfolio, which is why this site is **dark-only** and carries no `dark:` variants: `#030712` background, `#f9fafb` foreground, Geist Sans and Geist Mono. See [`frontend/README.md`](../frontend/README.md).
 
 ---
 

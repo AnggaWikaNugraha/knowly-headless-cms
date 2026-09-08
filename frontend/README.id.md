@@ -20,6 +20,8 @@ Frontend Astro untuk [Fullstack Headless CMS](../README.id.md) — situs publik 
 ## Daftar Isi
 
 - [Arsitektur: Astro vs UI Framework](#arsitektur-astro-vs-ui-framework)
+- [Routing](#routing)
+- [Tema](#tema)
 - [Fitur Utama](#fitur-utama)
 - [SEO](#seo)
 - [Penanganan Error](#penanganan-error)
@@ -181,6 +183,51 @@ Sebelum membuat komponen, tanyakan satu hal:
 **Tidak → `.astro`. Ya → komponen framework, memakai framework yang sudah dipegang halaman itu.**
 
 Perkiraannya sekitar selusin komponen Astro berbanding tiga komponen framework. Halaman detail artikel, kategori, tag, dan author seharusnya mengirim **0 kB JavaScript**.
+
+## Routing
+
+| File | URL | Dihasilkan dari |
+|---|---|---|
+| `pages/index.astro` | `/` | — |
+| `pages/articles/index.astro` | `/articles` | halaman 1 daftar |
+| `pages/articles/page/[page].astro` | `/articles/page/2`, … | halaman 2 ke atas |
+| `pages/articles/[slug].astro` | `/articles/<slug>` | setiap slug artikel |
+| `pages/categories/[slug].astro` | `/categories/<slug>` | setiap kategori |
+| `pages/tags/[slug].astro` | `/tags/<slug>` | setiap tag |
+| `pages/authors/[slug].astro` | `/authors/<slug>` | setiap author |
+| `pages/404.astro` | `/404` | — |
+
+Selain `/` dan `/404`, semuanya dihasilkan dari Strapi saat build — jadi jumlah halaman mengikuti isi konten.
+
+> [!WARNING]
+> **Pagination sengaja ditaruh di `/articles/page/`, bukan `/articles/[...page]`.**
+>
+> Rest route (`[...page].astro`) yang berada satu direktori dengan `[slug].astro` akan mengklaim seluruh wilayah `/articles/*`, termasuk slug artikel. Build statis menyembunyikan masalah ini — kedua path digenerate eksplisit dan tidak pernah berebut — tapi dev server mencocokkan route secara dinamis, dan di sana rest route yang menang. Gejalanya: setiap halaman detail artikel 404 di `npm run dev`, padahal `npm run build` menghasilkan halaman-halaman itu tanpa keluhan.
+>
+> Memisahkan keduanya ke direktori berbeda menghapus ambiguitasnya sama sekali.
+
+---
+
+## Tema
+
+Situs ini adalah bagian blog dari portofolio Next.js yang sudah ada, jadi temanya disamakan dengan portofolio, bukan dirancang sendiri.
+
+| Token | Nilai |
+|---|---|
+| Latar | `#030712` (gray-950) |
+| Teks | `#f9fafb` (gray-50) |
+| Font | Geist Variable / Geist Mono Variable, self-hosted |
+| Kartu | `bg-gray-900`, `border-gray-700`, `rounded-lg` |
+| Area konten | gradien `from-gray-900 to-gray-800` |
+
+> [!IMPORTANT]
+> Situs ini **dark-only**. Tidak ada varian `dark:` di mana pun, dan menambahkannya justru merusak keselarasan — portofolio tidak punya mode terang untuk disamakan.
+
+Font di-*self-host* lewat `@fontsource-variable/geist`, bukan diambil dari Google Fonts, supaya tidak ada permintaan pihak ketiga yang memblokir render sebelum tampilan pertama muncul.
+
+Tipografi artikel (`.prose-knowly` di `src/styles/global.css`) ditulis tangan alih-alih memakai `@tailwindcss/typography`. Yang butuh gaya hanya heading, list, blockquote, kode, dan gambar — tidak sepadan dengan satu dependensi lagi, mengikuti aturan minimal dependencies proyek ini.
+
+---
 
 ## Fitur Utama
 

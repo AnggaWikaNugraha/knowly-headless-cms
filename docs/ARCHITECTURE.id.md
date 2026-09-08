@@ -41,6 +41,7 @@ Tujuh titik di mana saya harus memilih, atau di mana README root belum mengatur 
 | D5 | **Base image Docker** | `node:22-slim` (Debian), bukan Alpine | Dependensi `sharp` milik Strapi merepotkan dibangun di Alpine; biayanya image ~40 MB lebih besar |
 | D6 | **Region Cloud Run** | `asia-southeast2` (Jakarta) | Latensi terendah untuk audiens Indonesia; alternatifnya `asia-southeast1` (Singapura) |
 | D7 | **Versi Node** | Kunci Node 22 LTS lewat `.nvmrc` | Mesin ini memakai Node 24, di luar matriks dukungan Strapi 5 — lihat [Penghalang](#penghalang-sebelum-fase-2) |
+| D8 | **Integrasi portofolio** | Disajikan sebagai `/blogs` di portofolio Next.js yang sudah ada lewat rewrite; tema disamakan | Menjaga aplikasi ini tetap berdiri sendiri, sehingga island dan service layer tetap terhitung sebagai karya portofolio. Alternatifnya — portofolio langsung fetch ke Strapi — akan membuang seluruh frontend ini |
 
 D2 yang paling saya tekankan: itu masalah kebenaran, bukan preferensi. Sisanya trade-off yang wajar saja kalau kamu putuskan berbeda.
 
@@ -428,6 +429,23 @@ Cloud Run terhubung ke Cloud SQL dengan `--add-cloudsql-instances`; tidak ada fi
 **Terbit → tayang.** Webhook Strapi pada peristiwa publish dan unpublish memanggil Vercel Deploy Hook, yang membangun ulang dan men-deploy ulang halaman statisnya. Editor melihat perubahan setelah build, bukan seketika. Itulah trade-off pada [D1](#0-keputusan-yang-butuh-persetujuanmu), dan alternatifnya — server rendering penuh — justru menuntut satu putaran ke Cloud Run pada setiap kunjungan halaman.
 
 Pull request otomatis mendapat preview deployment, mengarah ke instance Strapi yang sama.
+
+### Disajikan di `/blogs` milik portofolio
+
+Situs ini bukan tujuan yang berdiri sendiri. Dia menjadi bagian blog dari portofolio Next.js yang sudah ada (Tailwind 4, deploy di Vercel), diakses lewat `situs.com/blogs/*` melalui rewrite:
+
+```js
+// next.config.js di portofolio
+async rewrites() {
+  return [{ source: '/blogs/:path*', destination: 'https://<app-ini>.vercel.app/:path*' }];
+}
+```
+
+Dua perubahan mengikuti dari situ, keduanya dikerjakan di Fase 8: `base: '/blogs'` di `astro.config.mjs` supaya tautan internal menyesuaikan prefiks, dan entri navbar portofolio diarahkan ke `/blogs` alih-alih halaman blog lamanya.
+
+Halaman blog lama di portofolio ternyata cuma kerangka — data contoh yang di-hardcode lalu dibuang oleh komponennya, tanpa route API, dan tanpa tabel di database MySQL-nya — jadi tidak ada yang perlu dimigrasi. Halaman itu beserta komponennya bisa langsung dihapus.
+
+Temanya disamakan dengan portofolio, dan itulah sebabnya situs ini **dark-only** serta tidak memakai varian `dark:` sama sekali: latar `#030712`, teks `#f9fafb`, font Geist Sans dan Geist Mono. Lihat [`frontend/README.id.md`](../frontend/README.id.md).
 
 ---
 
