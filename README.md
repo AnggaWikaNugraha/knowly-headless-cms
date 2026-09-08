@@ -616,8 +616,8 @@ Astro · React · TypeScript · Strapi · REST API · PostgreSQL · Docker
 | [1](#phase-1--architecture) | Architecture | ✅ Done |
 | [2](#phase-2--initialization) | Initialization | ✅ Done |
 | [3](#phase-3--strapi) | Strapi | ✅ Done |
-| [4](#phase-4--astro) | Astro | 🔄 Next |
-| [5](#phase-5--islands) | Islands | ⬜ Not started |
+| [4](#phase-4--astro) | Astro | ✅ Done |
+| [5](#phase-5--islands) | Islands | 🔄 Next |
 | [6](#phase-6--error-handling) | Error Handling | ⬜ Not started |
 | [7](#phase-7--docker) | Docker | ⬜ Not started |
 | [8](#phase-8--deployment) | Deployment | ⬜ Not started |
@@ -676,15 +676,15 @@ Implement:
 
 Implement:
 
-- [ ] Layouts
-- [ ] Homepage
-- [ ] Article listing
-- [ ] Article detail
-- [ ] Category page
-- [ ] Tag page
-- [ ] Author page
-- [ ] SEO
-- [ ] REST API service layer
+- [x] Layouts
+- [x] Homepage
+- [x] Article listing
+- [x] Article detail
+- [x] Category page
+- [x] Tag page
+- [x] Author page
+- [x] SEO
+- [x] REST API service layer
 
 ### Phase 5 — Islands
 

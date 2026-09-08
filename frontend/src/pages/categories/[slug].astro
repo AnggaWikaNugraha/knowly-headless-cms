@@ -1,0 +1,34 @@
+---
+import type { GetStaticPaths } from 'astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ArticleGrid from '../../components/astro/ArticleGrid.astro';
+import EmptyState from '../../components/astro/EmptyState.astro';
+import { getCategories, getCategoryBySlug } from '../../services/strapi/categories';
+import { getArticlesByCategory } from '../../services/strapi/articles';
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  const { items } = await getCategories();
+  return items.map((c) => ({ params: { slug: c.slug } }));
+};
+
+const { slug } = Astro.params;
+const category = await getCategoryBySlug(slug!);
+if (!category) return Astro.redirect('/404');
+
+const { items: articles, pagination } = await getArticlesByCategory(category.slug, 1, 100);
+---
+<BaseLayout
+  title={`Kategori: ${category.name}`}
+  description={category.description ?? `Artikel dalam kategori ${category.name}.`}
+>
+  <header class="mb-12 border-b border-slate-200 pb-8 dark:border-slate-800">
+    <p class="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Kategori</p>
+    <h1 class="mt-2 text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">{category.name}</h1>
+    {category.description && <p class="mt-3 max-w-xl text-slate-600 dark:text-slate-400">{category.description}</p>}
+    <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">{pagination.total} artikel</p>
+  </header>
+
+  {articles.length > 0
+    ? <ArticleGrid articles={articles} />
+    : <EmptyState title="Belum ada artikel di kategori ini" />}
+</BaseLayout>

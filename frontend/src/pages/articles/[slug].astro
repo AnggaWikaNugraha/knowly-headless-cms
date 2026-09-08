@@ -1,0 +1,93 @@
+---
+import type { GetStaticPaths } from 'astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Prose from '../../components/astro/Prose.astro';
+import TagList from '../../components/astro/TagList.astro';
+import ArticleGrid from '../../components/astro/ArticleGrid.astro';
+import { getAllArticleSlugs, getArticleBySlug, getRelatedArticles } from '../../services/strapi/articles';
+import { mediaUrl } from '../../services/strapi/client';
+import { formatDate, readingTime } from '../../utils/date';
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  const slugs = await getAllArticleSlugs();
+  return slugs.map((slug) => ({ params: { slug } }));
+};
+
+const { slug } = Astro.params;
+const article = await getArticleBySlug(slug!);
+
+// Slug tak dikenal tidak boleh merender halaman kosong.
+if (!article) return Astro.redirect('/404');
+
+const related = await getRelatedArticles(article, 3);
+const cover = mediaUrl(article.coverImage?.url);
+const social = mediaUrl(article.seo?.socialImage?.url) ?? cover;
+---
+<BaseLayout
+  title={article.seo?.metaTitle ?? article.title}
+  description={article.seo?.metaDescription ?? article.excerpt}
+  keywords={article.seo?.keywords}
+  canonical={article.seo?.canonicalURL}
+  image={social}
+  article={{
+    publishedAt: article.publishedAt,
+    updatedAt: article.updatedAt,
+    author: article.author?.name,
+    category: article.category?.name,
+    tags: article.tags.map((t) => t.name),
+  }}
+>
+  <article class="mx-auto max-w-2xl">
+    <header class="mb-10">
+      <div class="mb-4 flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+        {article.category && (
+          <a href={`/categories/${article.category.slug}`} class="font-medium text-slate-700 hover:underline dark:text-slate-300">
+            {article.category.name}
+          </a>
+        )}
+        <span aria-hidden="true">·</span>
+        <time datetime={article.publishedAt ?? undefined}>{formatDate(article.publishedAt)}</time>
+        <span aria-hidden="true">·</span>
+        <span>{readingTime(article.content)} menit baca</span>
+      </div>
+
+      <h1 class="text-3xl font-semibold leading-tight tracking-tight text-slate-900 sm:text-4xl dark:text-slate-100">
+        {article.title}
+      </h1>
+
+      <p class="mt-4 text-lg leading-relaxed text-slate-600 dark:text-slate-400">{article.excerpt}</p>
+
+      {article.author && (
+        <a href={`/authors/${article.author.slug}`} class="mt-6 inline-flex items-center gap-3 text-sm">
+          <span class="font-medium text-slate-900 hover:underline dark:text-slate-100">{article.author.name}</span>
+        </a>
+      )}
+    </header>
+
+    {cover && (
+      <img
+        src={cover}
+        alt={article.coverImage?.alternativeText ?? ''}
+        width={article.coverImage?.width ?? 1200}
+        height={article.coverImage?.height ?? 630}
+        class="mb-10 w-full rounded-lg object-cover"
+      />
+    )}
+
+    <Prose content={article.content} />
+
+    {article.tags.length > 0 && (
+      <footer class="mt-12 border-t border-slate-200 pt-8 dark:border-slate-800">
+        <h2 class="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Tag</h2>
+        <TagList tags={article.tags} />
+      </footer>
+    )}
+  </article>
+
+  {related.length > 0 && (
+    <section class="mt-20 border-t border-slate-200 pt-12 dark:border-slate-800">
+      <h2 class="mb-8 text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Artikel terkait</h2>
+      <ArticleGrid articles={related} />
+    </section>
+  )}
+</BaseLayout>

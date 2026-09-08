@@ -1,0 +1,15 @@
+---
+import { marked } from 'marked';
+
+/**
+ * Merender Markdown jadi HTML di server.
+ *
+ * `set:html` aman di sini karena isinya berasal dari CMS milik sendiri yang
+ * hanya bisa ditulis editor terautentikasi — bukan input dari pengunjung.
+ * Kalau sumbernya berubah jadi tidak tepercaya, HTML-nya wajib disanitasi dulu.
+ */
+interface Props { content: string; }
+const { content } = Astro.props;
+const html = await marked.parse(content);
+---
+<div class="prose-knowly" set:html={html} />

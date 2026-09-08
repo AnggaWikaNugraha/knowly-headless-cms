@@ -1,0 +1,9 @@
+---
+import { site } from '../../config/site';
+const year = new Date().getFullYear();
+---
+<footer class="mt-20 border-t border-slate-200 dark:border-slate-800">
+  <div class="mx-auto max-w-5xl px-5 py-8 text-sm text-slate-500 dark:text-slate-400">
+    <p>© {year} {site.name}. Dibangun dengan Astro, Strapi, dan PostgreSQL.</p>
+  </div>
+</footer>

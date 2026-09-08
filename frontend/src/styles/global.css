@@ -1,1 +1,78 @@
 @import "tailwindcss";
+/*
+ * Gaya untuk isi artikel hasil render Markdown.
+ *
+ * Ditulis tangan alih-alih memasang @tailwindcss/typography: yang dibutuhkan
+ * hanya beberapa elemen, dan README proyek ini meminta dependensi seminimal
+ * mungkin.
+ */
+.prose-knowly {
+  --prose-body: var(--color-slate-700);
+  --prose-heading: var(--color-slate-900);
+  --prose-border: var(--color-slate-200);
+  --prose-code-bg: var(--color-slate-100);
+  color: var(--prose-body);
+  line-height: 1.75;
+}
+
+@media (prefers-color-scheme: dark) {
+  .prose-knowly {
+    --prose-body: var(--color-slate-300);
+    --prose-heading: var(--color-slate-100);
+    --prose-border: var(--color-slate-800);
+    --prose-code-bg: var(--color-slate-900);
+  }
+}
+
+.prose-knowly > * + * { margin-top: 1.25em; }
+
+.prose-knowly h2,
+.prose-knowly h3 {
+  color: var(--prose-heading);
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 2em;
+  margin-bottom: 0.6em;
+}
+.prose-knowly h2 { font-size: 1.4rem; }
+.prose-knowly h3 { font-size: 1.15rem; }
+
+.prose-knowly a {
+  color: var(--prose-heading);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.prose-knowly strong { color: var(--prose-heading); font-weight: 600; }
+
+.prose-knowly ul,
+.prose-knowly ol { padding-left: 1.4em; }
+.prose-knowly ul { list-style: disc; }
+.prose-knowly ol { list-style: decimal; }
+.prose-knowly li + li { margin-top: 0.4em; }
+
+.prose-knowly blockquote {
+  border-left: 3px solid var(--prose-border);
+  padding-left: 1em;
+  font-style: italic;
+}
+
+.prose-knowly code {
+  background: var(--prose-code-bg);
+  border-radius: 0.25rem;
+  padding: 0.15em 0.4em;
+  font-size: 0.875em;
+}
+
+.prose-knowly pre {
+  background: var(--prose-code-bg);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  overflow-x: auto;
+  font-size: 0.85em;
+  line-height: 1.6;
+}
+.prose-knowly pre code { background: none; padding: 0; font-size: inherit; }
+
+.prose-knowly img { border-radius: 0.5rem; }
+.prose-knowly hr { border-color: var(--prose-border); }

@@ -1,0 +1,35 @@
+---
+import type { GetStaticPaths, Page } from 'astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ArticleGrid from '../../components/astro/ArticleGrid.astro';
+import EmptyState from '../../components/astro/EmptyState.astro';
+import Pagination from '../../components/astro/Pagination.astro';
+import { getLatestArticles } from '../../services/strapi/articles';
+import { site } from '../../config/site';
+import type { Article } from '../../types/strapi';
+
+export const getStaticPaths: GetStaticPaths = async ({ paginate }) => {
+  const { items } = await getLatestArticles(100);
+  return paginate(items, { pageSize: site.pageSize });
+};
+
+const { page } = Astro.props as { page: Page<Article> };
+const title = page.currentPage > 1 ? `Artikel — halaman ${page.currentPage}` : 'Artikel';
+---
+<BaseLayout title={title} description={`Semua artikel di ${site.name}.`}>
+  <header class="mb-12">
+    <h1 class="text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Artikel</h1>
+    <p class="mt-2 text-slate-600 dark:text-slate-400">{page.total} tulisan</p>
+  </header>
+
+  {page.data.length > 0
+    ? <ArticleGrid articles={page.data} />
+    : <EmptyState title="Belum ada artikel" />}
+
+  <Pagination
+    currentPage={page.currentPage}
+    lastPage={page.lastPage}
+    prevUrl={page.url.prev}
+    nextUrl={page.url.next}
+  />
+</BaseLayout>
