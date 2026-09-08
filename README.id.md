@@ -611,34 +611,37 @@ Astro · React · TypeScript · Strapi · REST API · PostgreSQL · Docker
 >
 > Sebelum menghasilkan kode, jelaskan apa yang akan diimplementasikan dan alasannya.
 
-| Fase | Fokus |
-|---|---|
-| [1](#fase-1--arsitektur) | Arsitektur |
-| [2](#fase-2--inisialisasi) | Inisialisasi |
-| [3](#fase-3--strapi) | Strapi |
-| [4](#fase-4--astro) | Astro |
-| [5](#fase-5--islands) | Islands |
-| [6](#fase-6--penanganan-error) | Penanganan Error |
-| [7](#fase-7--docker) | Docker |
-| [8](#fase-8--deployment) | Deployment |
-| [9](#fase-9--review-produksi) | Review Produksi |
-| [10](#fase-10--persiapan-portofolio) | Persiapan Portofolio |
+| Fase | Fokus | Status |
+|---|---|---|
+| [1](#fase-1--arsitektur) | Arsitektur | ✅ Selesai |
+| [2](#fase-2--inisialisasi) | Inisialisasi | ✅ Selesai |
+| [3](#fase-3--strapi) | Strapi | 🔄 Berikutnya |
+| [4](#fase-4--astro) | Astro | ⬜ Belum |
+| [5](#fase-5--islands) | Islands | ⬜ Belum |
+| [6](#fase-6--penanganan-error) | Penanganan Error | ⬜ Belum |
+| [7](#fase-7--docker) | Docker | ⬜ Belum |
+| [8](#fase-8--deployment) | Deployment | ⬜ Belum |
+| [9](#fase-9--review-produksi) | Review Produksi | ⬜ Belum |
+| [10](#fase-10--persiapan-portofolio) | Persiapan Portofolio | ⬜ Belum |
+
+> [!NOTE]
+> Sebuah fase baru selesai kalau semua kotak di bawahnya tercentang. Jangan mulai fase berikutnya sebelum itu — checklist ini batas scope, bukan saran.
 
 ### Fase 1 — Arsitektur
 
 Sebelum menulis kode aplikasi:
 
-1. Jelaskan arsitektur secara lengkap.
-2. Usulkan struktur folder monorepo.
-3. Daftarkan dependensi yang dibutuhkan.
-4. Definisikan content model Strapi.
-5. Definisikan relasi konten.
-6. Jelaskan pembagian tanggung jawab Astro vs React Island.
-7. Definisikan strategi integrasi REST API.
-8. Definisikan konfigurasi PostgreSQL.
-9. Jelaskan arsitektur Docker.
-10. Jelaskan arsitektur GCP Cloud Run + Cloud SQL.
-11. Jelaskan arsitektur deployment Vercel.
+- [x] Jelaskan arsitektur secara lengkap.
+- [x] Usulkan struktur folder monorepo.
+- [x] Daftarkan dependensi yang dibutuhkan.
+- [x] Definisikan content model Strapi.
+- [x] Definisikan relasi konten.
+- [x] Jelaskan pembagian tanggung jawab Astro vs island.
+- [x] Definisikan strategi integrasi REST API.
+- [x] Definisikan konfigurasi PostgreSQL.
+- [x] Jelaskan arsitektur Docker.
+- [x] Jelaskan arsitektur GCP Cloud Run + Cloud SQL.
+- [x] Jelaskan arsitektur deployment Vercel.
 
 > [!IMPORTANT]
 > **BERHENTI setelah Fase 1.** Tunggu persetujuan saya sebelum implementasi.
@@ -647,49 +650,49 @@ Sebelum menulis kode aplikasi:
 
 Inisialisasi:
 
-- Monorepo
-- Frontend Astro
-- Backend Strapi
-- TypeScript
-- Tailwind
-- PostgreSQL
-- Konfigurasi environment
+- [x] Monorepo
+- [x] Frontend Astro
+- [x] Backend Strapi
+- [x] TypeScript
+- [x] Tailwind
+- [x] PostgreSQL
+- [x] Konfigurasi environment
 
 ### Fase 3 — Strapi
 
 Implementasikan:
 
-- Article
-- Author
-- Category
-- Tag
-- Komponen SEO
-- Relasi
-- Media
-- Permission
-- REST API
+- [ ] Article
+- [ ] Author
+- [ ] Category
+- [ ] Tag
+- [ ] Komponen SEO
+- [ ] Relasi
+- [ ] Media
+- [ ] Permission
+- [ ] REST API
 
 ### Fase 4 — Astro
 
 Implementasikan:
 
-- Layout
-- Homepage
-- Daftar artikel
-- Detail artikel
-- Halaman kategori
-- Halaman tag
-- Halaman author
-- SEO
-- REST API service layer
+- [ ] Layout
+- [ ] Homepage
+- [ ] Daftar artikel
+- [ ] Detail artikel
+- [ ] Halaman kategori
+- [ ] Halaman tag
+- [ ] Halaman author
+- [ ] SEO
+- [ ] REST API service layer
 
 ### Fase 5 — Islands
 
 Implementasikan hanya fungsionalitas interaktif:
 
-- Search
-- Filtering
-- Komponen interaktif lain yang memang beralasan
+- [ ] Search
+- [ ] Filtering
+- [ ] Komponen interaktif lain yang memang beralasan
 
 Jelaskan strategi hidrasinya dan konfirmasi pembagian frameworknya.
 
@@ -697,11 +700,11 @@ Jelaskan strategi hidrasinya dan konfirmasi pembagian frameworknya.
 
 Implementasikan:
 
-- Loading state
-- Empty state
-- Error state
-- 404
-- Penanganan kegagalan API
+- [ ] Loading state
+- [ ] Empty state
+- [ ] Error state
+- [ ] 404
+- [ ] Penanganan kegagalan API
 
 ### Fase 7 — Docker
 
@@ -709,9 +712,9 @@ Kontainerisasi Strapi.
 
 Buat:
 
-- `Dockerfile`
-- `.dockerignore`
-- `docker-compose.yml` jika bermanfaat
+- [ ] `Dockerfile`
+- [ ] `.dockerignore`
+- [ ] `docker-compose.yml` jika bermanfaat
 
 Uji Strapi + PostgreSQL secara lokal.
 
@@ -729,34 +732,34 @@ Deploy:
 
 Review:
 
-- Performa
-- SEO
-- Aksesibilitas
-- Keamanan
-- Desain responsif
-- Kualitas TypeScript
-- Arsitektur REST API
-- Hidrasi Astro
-- Docker image
-- Environment produksi
-- Penanganan error
+- [ ] Performa
+- [ ] SEO
+- [ ] Aksesibilitas
+- [ ] Keamanan
+- [ ] Desain responsif
+- [ ] Kualitas TypeScript
+- [ ] Arsitektur REST API
+- [ ] Hidrasi Astro
+- [ ] Docker image
+- [ ] Environment produksi
+- [ ] Penanganan error
 
 ### Fase 10 — Persiapan Portofolio
 
 Setelah aplikasi selesai, buat deskripsi teknis proyek yang ringkas untuk portofolio saya, mencakup:
 
-- Tujuan proyek
-- Peran saya sebagai Full-Stack Developer
-- Arsitektur Astro
-- Alasan memilih Astro
-- Integrasi Astro + Strapi
-- Strategi pengambilan data REST API
-- Penggunaan PostgreSQL
-- Islands (React, Vue, Svelte)
-- Docker
-- Deployment GCP
-- Tantangan yang dihadapi
-- Solusi yang diterapkan
+- [ ] Tujuan proyek
+- [ ] Peran saya sebagai Full-Stack Developer
+- [ ] Arsitektur Astro
+- [ ] Alasan memilih Astro
+- [ ] Integrasi Astro + Strapi
+- [ ] Strategi pengambilan data REST API
+- [ ] Penggunaan PostgreSQL
+- [ ] Islands (React, Vue, Svelte)
+- [ ] Docker
+- [ ] Deployment GCP
+- [ ] Tantangan yang dihadapi
+- [ ] Solusi yang diterapkan
 
 > [!CAUTION]
 > Jangan mengklaim fungsionalitas yang tidak benar-benar diimplementasikan.

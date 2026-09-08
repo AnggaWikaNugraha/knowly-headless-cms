@@ -611,34 +611,37 @@ Astro · React · TypeScript · Strapi · REST API · PostgreSQL · Docker
 >
 > Before generating code, explain what will be implemented and why.
 
-| Phase | Focus |
-|---|---|
-| [1](#phase-1--architecture) | Architecture |
-| [2](#phase-2--initialization) | Initialization |
-| [3](#phase-3--strapi) | Strapi |
-| [4](#phase-4--astro) | Astro |
-| [5](#phase-5--islands) | Islands |
-| [6](#phase-6--error-handling) | Error Handling |
-| [7](#phase-7--docker) | Docker |
-| [8](#phase-8--deployment) | Deployment |
-| [9](#phase-9--production-review) | Production Review |
-| [10](#phase-10--portfolio-preparation) | Portfolio Preparation |
+| Phase | Focus | Status |
+|---|---|---|
+| [1](#phase-1--architecture) | Architecture | ✅ Done |
+| [2](#phase-2--initialization) | Initialization | ✅ Done |
+| [3](#phase-3--strapi) | Strapi | 🔄 Next |
+| [4](#phase-4--astro) | Astro | ⬜ Not started |
+| [5](#phase-5--islands) | Islands | ⬜ Not started |
+| [6](#phase-6--error-handling) | Error Handling | ⬜ Not started |
+| [7](#phase-7--docker) | Docker | ⬜ Not started |
+| [8](#phase-8--deployment) | Deployment | ⬜ Not started |
+| [9](#phase-9--production-review) | Production Review | ⬜ Not started |
+| [10](#phase-10--portfolio-preparation) | Portfolio Preparation | ⬜ Not started |
+
+> [!NOTE]
+> A phase is finished only when every box under it is ticked. Do not start the next phase before then — the checklist is the scope boundary, not a suggestion.
 
 ### Phase 1 — Architecture
 
 Before writing application code:
 
-1. Explain the complete architecture.
-2. Propose the monorepo folder structure.
-3. List required dependencies.
-4. Define Strapi content models.
-5. Define content relationships.
-6. Explain Astro vs React Island responsibilities.
-7. Define the REST API integration strategy.
-8. Define PostgreSQL configuration.
-9. Explain Docker architecture.
-10. Explain GCP Cloud Run + Cloud SQL architecture.
-11. Explain Vercel deployment architecture.
+- [x] Explain the complete architecture.
+- [x] Propose the monorepo folder structure.
+- [x] List required dependencies.
+- [x] Define Strapi content models.
+- [x] Define content relationships.
+- [x] Explain Astro vs island responsibilities.
+- [x] Define the REST API integration strategy.
+- [x] Define PostgreSQL configuration.
+- [x] Explain Docker architecture.
+- [x] Explain GCP Cloud Run + Cloud SQL architecture.
+- [x] Explain Vercel deployment architecture.
 
 > [!IMPORTANT]
 > **STOP after Phase 1.** Wait for my approval before implementation.
@@ -647,49 +650,49 @@ Before writing application code:
 
 Initialize:
 
-- Monorepo
-- Astro frontend
-- Strapi backend
-- TypeScript
-- Tailwind
-- PostgreSQL
-- Environment configuration
+- [x] Monorepo
+- [x] Astro frontend
+- [x] Strapi backend
+- [x] TypeScript
+- [x] Tailwind
+- [x] PostgreSQL
+- [x] Environment configuration
 
 ### Phase 3 — Strapi
 
 Implement:
 
-- Article
-- Author
-- Category
-- Tag
-- SEO component
-- Relationships
-- Media
-- Permissions
-- REST API
+- [ ] Article
+- [ ] Author
+- [ ] Category
+- [ ] Tag
+- [ ] SEO component
+- [ ] Relationships
+- [ ] Media
+- [ ] Permissions
+- [ ] REST API
 
 ### Phase 4 — Astro
 
 Implement:
 
-- Layouts
-- Homepage
-- Article listing
-- Article detail
-- Category page
-- Tag page
-- Author page
-- SEO
-- REST API service layer
+- [ ] Layouts
+- [ ] Homepage
+- [ ] Article listing
+- [ ] Article detail
+- [ ] Category page
+- [ ] Tag page
+- [ ] Author page
+- [ ] SEO
+- [ ] REST API service layer
 
 ### Phase 5 — Islands
 
 Implement only interactive functionality:
 
-- Search
-- Filtering
-- Other justified interactive components
+- [ ] Search
+- [ ] Filtering
+- [ ] Other justified interactive components
 
 Explain the hydration strategy and confirm the framework allocation.
 
@@ -697,11 +700,11 @@ Explain the hydration strategy and confirm the framework allocation.
 
 Implement:
 
-- Loading states
-- Empty states
-- Error states
-- 404
-- API failure handling
+- [ ] Loading states
+- [ ] Empty states
+- [ ] Error states
+- [ ] 404
+- [ ] API failure handling
 
 ### Phase 7 — Docker
 
@@ -709,9 +712,9 @@ Containerize Strapi.
 
 Create:
 
-- `Dockerfile`
-- `.dockerignore`
-- `docker-compose.yml` where useful
+- [ ] `Dockerfile`
+- [ ] `.dockerignore`
+- [ ] `docker-compose.yml` where useful
 
 Test Strapi + PostgreSQL locally.
 
@@ -729,34 +732,34 @@ Deploy:
 
 Review:
 
-- Performance
-- SEO
-- Accessibility
-- Security
-- Responsive design
-- TypeScript quality
-- REST API architecture
-- Astro hydration
-- Docker image
-- Production environment
-- Error handling
+- [ ] Performance
+- [ ] SEO
+- [ ] Accessibility
+- [ ] Security
+- [ ] Responsive design
+- [ ] TypeScript quality
+- [ ] REST API architecture
+- [ ] Astro hydration
+- [ ] Docker image
+- [ ] Production environment
+- [ ] Error handling
 
 ### Phase 10 — Portfolio Preparation
 
 After the application is complete, generate a concise technical project description for my portfolio covering:
 
-- Project goal
-- My role as Full-Stack Developer
-- Astro architecture
-- Why Astro was chosen
-- Astro + Strapi integration
-- REST API data fetching strategy
-- PostgreSQL usage
-- Islands (React, Vue, Svelte)
-- Docker
-- GCP deployment
-- Challenges faced
-- Solutions implemented
+- [ ] Project goal
+- [ ] My role as Full-Stack Developer
+- [ ] Astro architecture
+- [ ] Why Astro was chosen
+- [ ] Astro + Strapi integration
+- [ ] REST API data fetching strategy
+- [ ] PostgreSQL usage
+- [ ] Islands (React, Vue, Svelte)
+- [ ] Docker
+- [ ] GCP deployment
+- [ ] Challenges faced
+- [ ] Solutions implemented
 
 > [!CAUTION]
 > Do not claim functionality that was not actually implemented.
