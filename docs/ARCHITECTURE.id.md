@@ -36,7 +36,7 @@ Tujuh titik di mana saya harus memilih, atau di mana README root belum mengatur 
 |---|---|---|---|
 | D1 | **Mode rendering** | Halaman konten di-prerender saat build; hanya `/search` yang server-rendered | Menukar jeda terbit-ke-tayang (~1–3 menit rebuild) dengan biaya hosting nyaris nol dan TTFB terbaik |
 | D2 | **Penyimpanan media** | Upload provider Cloudinary, bukan disk lokal Strapi | **Filesystem Cloud Run bersifat ephemeral — upload lokal hilang setiap kali restart.** Bukan opsional kalau gambar harus bertahan |
-| D3 | **Autentikasi baca Strapi** | API token read-only, permission publik tetap dimatikan | Lebih aman daripada membuka akses baca publik; menambah `STRAPI_API_TOKEN` di env frontend |
+| D3 | **Akses baca Strapi** | Permission publik (`find`/`findOne` saja), dinyalakan di `bootstrap()`; tanpa API token | Lebih sederhana — tidak ada secret yang perlu dikelola — tapi content API bisa dibaca siapa pun yang menemukan URL-nya. Semua penulisan tetap tertutup |
 | D4 | **Jalur data search** | Island → Astro `/api/search` → service layer → Strapi | Menjaga URL dan token Strapi tetap di server; tidak perlu membuka CORS ke browser |
 | D5 | **Base image Docker** | `node:22-slim` (Debian), bukan Alpine | Dependensi `sharp` milik Strapi merepotkan dibangun di Alpine; biayanya image ~40 MB lebih besar |
 | D6 | **Region Cloud Run** | `asia-southeast2` (Jakarta) | Latensi terendah untuk audiens Indonesia; alternatifnya `asia-southeast1` (Singapura) |
@@ -66,7 +66,7 @@ Halaman konten dirender sekali, saat situs dibangun:
 flowchart LR
     E["Editor<br/>menerbitkan di Strapi"] -->|webhook| VH["Vercel<br/>Deploy Hook"]
     VH --> B["Astro build"]
-    B -->|"REST, token read-only"| S["Strapi<br/>Cloud Run"]
+    B -->|"REST, baca publik"| S["Strapi<br/>Cloud Run"]
     S --> DB[("Cloud SQL<br/>PostgreSQL")]
     B --> ST["HTML statis<br/>di Vercel CDN"]
 ```
@@ -82,7 +82,7 @@ flowchart LR
     CDN -->|"/search"| F["Astro server route"]
     F --> API["/api/search"]
     API --> SL["services/strapi"]
-    SL -->|"REST, token"| S["Strapi<br/>Cloud Run"]
+    SL -->|"REST"| S["Strapi<br/>Cloud Run"]
     S --> DB[("Cloud SQL")]
 ```
 
@@ -90,7 +90,12 @@ Konsekuensi yang perlu disadari: karena halaman konten sudah di-prerender, **Clo
 
 ### Batas kepercayaan
 
-Browser tidak pernah memegang URL maupun token Strapi. Keduanya hidup di environment sisi server Vercel, dipakai oleh proses build Astro dan oleh `/api/search`. Role publik Strapi tetap dimatikan; semua pembacaan memakai API token read-only.
+Browser tidak pernah memegang URL Strapi. URL itu hidup di environment sisi server Vercel, dipakai oleh proses build Astro dan oleh `/api/search`.
+
+Role publik Strapi diberi tepat `find` dan `findOne` pada keempat content type, tidak lebih — setiap aksi penulisan mengembalikan 403. Pemberian izin itu ditulis di `src/index.ts` (`bootstrap()`), bukan diklik di admin panel, karena Strapi menyimpan permission di **database**, bukan di file: instance Cloud SQL yang baru akan start tanpa permission sama sekali, dan setiap request gagal 403 hanya di produksi.
+
+> [!NOTE]
+> Baca publik adalah trade-off yang disengaja. Ini bukan kebocoran data — konten yang sama toh tampil di situs publik — tapi content API jadi bisa dijangkau siapa pun yang menemukan URL-nya, terbuka untuk di-scrape, dan bisa membangunkan Cloud Run dengan trafik. Jalur peningkatannya adalah API token read-only: cabut pemberian izin di `bootstrap()`, lalu tambahkan `STRAPI_API_TOKEN` ke environment frontend.
 
 Ini memenuhi aturan README root — Astro tidak pernah menyentuh PostgreSQL, dan setiap pembacaan mengikuti `Astro → REST → Strapi → PostgreSQL`.
 
@@ -335,7 +340,7 @@ Island React  ──fetch──▶  /api/search?q=…   (Astro server route, sat
                         Strapi REST  ──▶  PostgreSQL
 ```
 
-Dengan begitu `STRAPI_API_URL` dan `STRAPI_API_TOKEN` tetap di server, tidak perlu entri CORS untuk browser, dan halaman maupun island berbagi satu sumber kebenaran. Sesuai [keputusan sebelumnya](../README.id.md#islands), island memakai `useState` + `useEffect` + `AbortController` dengan debounce — tanpa TanStack Query, tanpa SWR.
+Dengan begitu `STRAPI_API_URL` tetap di server, tidak perlu entri CORS untuk browser, dan halaman maupun island berbagi satu sumber kebenaran. Sesuai [keputusan sebelumnya](../README.id.md#islands), island memakai `useState` + `useEffect` + `AbortController` dengan debounce — tanpa TanStack Query, tanpa SWR.
 
 > [!NOTE]
 > Strapi mengubah bentuk respons REST-nya antara v4 dan v5 (v5 meratakan nesting `attributes`). Type TypeScript di `src/types/` ditulis mengikuti versi mayor yang kita pasang, dan itu dikonfirmasi di Fase 3.
@@ -416,9 +421,9 @@ Cloud Run terhubung ke Cloud SQL dengan `--add-cloudsql-instances`; tidak ada fi
 | Root directory | `frontend/` |
 | Framework preset | Astro |
 | Adapter | `@astrojs/vercel` |
-| Environment | `STRAPI_API_URL`, `STRAPI_API_TOKEN`, `PUBLIC_SITE_URL` |
+| Environment | `STRAPI_API_URL`, `PUBLIC_SITE_URL` |
 
-`STRAPI_API_URL` dan `STRAPI_API_TOKEN` tidak berprefiks `PUBLIC_`, jadi Astro menahannya di sisi server; hanya `PUBLIC_SITE_URL` yang sampai ke browser, dan itu bukan secret — canonical URL dan tag Open Graph memang membutuhkannya.
+`STRAPI_API_URL` tidak berprefiks `PUBLIC_`, jadi Astro menahannya di sisi server; hanya `PUBLIC_SITE_URL` yang sampai ke browser, dan itu bukan secret — canonical URL dan tag Open Graph memang membutuhkannya.
 
 **Terbit → tayang.** Webhook Strapi pada peristiwa publish dan unpublish memanggil Vercel Deploy Hook, yang membangun ulang dan men-deploy ulang halaman statisnya. Editor melihat perubahan setelah build, bukan seketika. Itulah trade-off pada [D1](#0-keputusan-yang-butuh-persetujuanmu), dan alternatifnya — server rendering penuh — justru menuntut satu putaran ke Cloud Run pada setiap kunjungan halaman.
 
@@ -432,7 +437,6 @@ Pull request otomatis mendapat preview deployment, mengarah ke instance Strapi y
 
 ```bash
 STRAPI_API_URL=
-STRAPI_API_TOKEN=          # BARU — token read-only, lihat D3
 PUBLIC_SITE_URL=
 ```
 
@@ -463,7 +467,7 @@ CLOUDINARY_KEY=            # BARU
 CLOUDINARY_SECRET=         # BARU
 ```
 
-Empat tambahan dari yang ditetapkan README root, semuanya konsekuensi keputusan di atas. Kalau D2 atau D3 ditolak, variabel terkaitnya ikut hilang.
+Tambahan dari yang ditetapkan README root, semuanya konsekuensi keputusan di atas. `STRAPI_API_TOKEN` dihapus setelah D3 memilih baca publik alih-alih token.
 
 ---
 

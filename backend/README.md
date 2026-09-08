@@ -20,6 +20,7 @@ Strapi backend for the [Fullstack Headless CMS](../README.md) — the Headless C
 - [Content Relationships](#content-relationships)
 - [Strapi Admin](#strapi-admin)
 - [CORS & Security](#cors--security)
+- [Public API access](#public-api-access)
 
 ---
 
@@ -112,3 +113,23 @@ Production frontend:  Vercel  ->  Strapi Cloud Run
 - Do not expose internal error details
 - Configure CORS properly
 - Keep dependencies updated
+
+---
+
+### Public API access
+
+The content API is **open for reading**. Strapi's Public role is granted `find` and `findOne` on Article, Author, Category and Tag — and nothing else.
+
+| Request | Public role | Result |
+|---|---|---|
+| `GET /api/articles` | granted | `200` |
+| `GET /api/articles/:documentId` | granted | `200` |
+| `POST` / `PUT` / `DELETE` on any content type | not granted | `403` |
+| `/api/auth/*` (end-user login) | not granted | `403` |
+
+Those grants are applied in [`src/index.ts`](src/index.ts) inside `bootstrap()`, not by ticking boxes in the admin panel.
+
+The reason is that Strapi stores permissions in the **database**, not in files. A permission ticked on a local database never travels with the code — a fresh Cloud SQL instance would start with none, and every request would fail with `403` in production only, long after the change looked correct locally. Granting them in code keeps the setting version-controlled, reviewable, and identical on every environment.
+
+> [!NOTE]
+> Open read means the content API is reachable by anyone who finds its URL. That is not a data leak — the same content is published on the public site — but it does allow scraping, and traffic can wake Cloud Run. To close it, remove the `bootstrap()` grant and give Astro a read-only API token instead. See D3 in [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md).

@@ -20,6 +20,7 @@ Backend Strapi untuk [Fullstack Headless CMS](../README.id.md) — lapisan Headl
 - [Relasi Konten](#relasi-konten)
 - [Strapi Admin](#strapi-admin)
 - [CORS & Keamanan](#cors--keamanan)
+- [Akses API publik](#akses-api-publik)
 
 ---
 
@@ -112,3 +113,23 @@ Frontend produksi:  Vercel  ->  Strapi Cloud Run
 - Jangan mengekspos detail error internal
 - Konfigurasikan CORS dengan benar
 - Jaga dependensi tetap diperbarui
+
+---
+
+### Akses API publik
+
+Content API **terbuka untuk dibaca**. Role Public di Strapi diberi `find` dan `findOne` pada Article, Author, Category, dan Tag — tidak lebih.
+
+| Request | Role Public | Hasil |
+|---|---|---|
+| `GET /api/articles` | diizinkan | `200` |
+| `GET /api/articles/:documentId` | diizinkan | `200` |
+| `POST` / `PUT` / `DELETE` pada content type mana pun | tidak | `403` |
+| `/api/auth/*` (login pengunjung) | tidak | `403` |
+
+Pemberian izin itu dilakukan di [`src/index.ts`](src/index.ts) dalam `bootstrap()`, bukan dengan mencentang kotak di admin panel.
+
+Alasannya, Strapi menyimpan permission di **database**, bukan di file. Izin yang dicentang di database lokal tidak ikut berpindah bersama kode — instance Cloud SQL yang baru akan start tanpa permission sama sekali, dan setiap request gagal `403` hanya di produksi, lama setelah perubahannya tampak benar di lokal. Menuliskannya sebagai kode membuat setelan ini masuk version control, bisa direview, dan sama persis di semua environment.
+
+> [!NOTE]
+> Baca terbuka berarti content API bisa dijangkau siapa pun yang menemukan URL-nya. Ini bukan kebocoran data — konten yang sama toh terbit di situs publik — tapi memungkinkan scraping, dan trafiknya bisa membangunkan Cloud Run. Untuk menutupnya, cabut pemberian izin di `bootstrap()` lalu berikan API token read-only ke Astro. Lihat D3 di [`docs/ARCHITECTURE.id.md`](../docs/ARCHITECTURE.id.md).

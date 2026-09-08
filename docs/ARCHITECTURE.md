@@ -36,7 +36,7 @@ Seven points where I had to choose, or where the root README does not yet cover 
 |---|---|---|---|
 | D1 | **Rendering mode** | Prerender content pages at build; server-render only `/search` | Trades publish-to-live latency (~1–3 min rebuild) for near-zero hosting cost and best TTFB |
 | D2 | **Media storage** | Cloudinary upload provider, not Strapi's local disk | **Cloud Run's filesystem is ephemeral — local uploads are destroyed on every restart.** Not optional if images must survive |
-| D3 | **Strapi auth for reads** | Read-only API token, public permissions left disabled | More secure than opening public read; adds `STRAPI_API_TOKEN` to the frontend env |
+| D3 | **Strapi read access** | Public read permissions (`find`/`findOne` only), granted in `bootstrap()`; no API token | Simpler — no secret to manage — but leaves the content API readable by anyone who finds the URL. All writes stay closed |
 | D4 | **Search data path** | Island → Astro `/api/search` → service layer → Strapi | Keeps the Strapi URL and token server-side; avoids opening CORS to the browser |
 | D5 | **Docker base image** | `node:22-slim` (Debian), not Alpine | Strapi's `sharp` dependency is painful to build on Alpine; costs ~40 MB more image |
 | D6 | **Cloud Run region** | `asia-southeast2` (Jakarta) | Lowest latency for an Indonesian audience; `asia-southeast1` (Singapore) is the alternative |
@@ -66,7 +66,7 @@ Content pages are rendered once, when the site builds:
 flowchart LR
     E["Editor<br/>publishes in Strapi"] -->|webhook| VH["Vercel<br/>Deploy Hook"]
     VH --> B["Astro build"]
-    B -->|"REST, read-only token"| S["Strapi<br/>Cloud Run"]
+    B -->|"REST, public read"| S["Strapi<br/>Cloud Run"]
     S --> DB[("Cloud SQL<br/>PostgreSQL")]
     B --> ST["Static HTML<br/>on Vercel CDN"]
 ```
@@ -82,7 +82,7 @@ flowchart LR
     CDN -->|"/search"| F["Astro server route"]
     F --> API["/api/search"]
     API --> SL["services/strapi"]
-    SL -->|"REST, token"| S["Strapi<br/>Cloud Run"]
+    SL -->|"REST"| S["Strapi<br/>Cloud Run"]
     S --> DB[("Cloud SQL")]
 ```
 
@@ -90,7 +90,12 @@ The consequence worth noticing: because content pages are prerendered, **Cloud R
 
 ### Trust boundary
 
-The browser never holds a Strapi URL or token. Both live in Vercel's server-side environment, used by the Astro build and by `/api/search`. Strapi's public role stays disabled; all reads authenticate with a read-only API token.
+The browser never holds a Strapi URL. It lives in Vercel's server-side environment, used by the Astro build and by `/api/search`.
+
+Strapi's public role grants exactly `find` and `findOne` on the four content types and nothing else — every write action returns 403. Those grants live in `src/index.ts` (`bootstrap()`) rather than being clicked in the admin panel, because Strapi stores permissions in the **database**, not in files: a fresh Cloud SQL instance would otherwise start with no permissions and every request would fail with 403 in production only.
+
+> [!NOTE]
+> Public read is a deliberate trade-off. It is not a data leak — the same content appears on the public site — but it does leave the content API reachable by anyone who finds the URL, open to scraping, and able to wake Cloud Run with traffic. The upgrade path is a read-only API token: remove the `bootstrap()` grant and add `STRAPI_API_TOKEN` to the frontend environment.
 
 This satisfies the root README's rule — Astro never touches PostgreSQL, and every read follows `Astro → REST → Strapi → PostgreSQL`.
 
@@ -335,7 +340,7 @@ React island  ──fetch──▶  /api/search?q=…   (Astro server route, sam
                         Strapi REST  ──▶  PostgreSQL
 ```
 
-That keeps `STRAPI_API_URL` and `STRAPI_API_TOKEN` on the server, needs no CORS entry for the browser, and means pages and islands share one source of truth. Per the [earlier decision](../README.md#islands), the island uses `useState` + `useEffect` + `AbortController` with a debounce — no TanStack Query, no SWR.
+That keeps `STRAPI_API_URL` on the server, needs no CORS entry for the browser, and means pages and islands share one source of truth. Per the [earlier decision](../README.md#islands), the island uses `useState` + `useEffect` + `AbortController` with a debounce — no TanStack Query, no SWR.
 
 > [!NOTE]
 > Strapi changed its REST response shape between v4 and v5 (v5 flattens away the `attributes` nesting). The TypeScript types in `src/types/` are written against whichever major we install, and that is confirmed in Phase 3.
@@ -416,9 +421,9 @@ Cloud Run connects to Cloud SQL with `--add-cloudsql-instances`; no credential f
 | Root directory | `frontend/` |
 | Framework preset | Astro |
 | Adapter | `@astrojs/vercel` |
-| Environment | `STRAPI_API_URL`, `STRAPI_API_TOKEN`, `PUBLIC_SITE_URL` |
+| Environment | `STRAPI_API_URL`, `PUBLIC_SITE_URL` |
 
-`STRAPI_API_URL` and `STRAPI_API_TOKEN` have no `PUBLIC_` prefix, so Astro keeps them server-side; only `PUBLIC_SITE_URL` reaches the browser, and it is not a secret — canonical URLs and Open Graph tags need it.
+`STRAPI_API_URL` has no `PUBLIC_` prefix, so Astro keeps it server-side; only `PUBLIC_SITE_URL` reaches the browser, and it is not a secret — canonical URLs and Open Graph tags need it.
 
 **Publish → live.** A Strapi webhook on entry publish and unpublish calls a Vercel Deploy Hook, which rebuilds and redeploys the static pages. Editors see changes after a build, not instantly. That is the trade-off in [D1](#0-decisions-that-need-your-approval), and the alternative — full server rendering — costs a Cloud Run round trip on every page view instead.
 
@@ -432,7 +437,6 @@ Pull requests get preview deployments automatically, pointed at the same Strapi 
 
 ```bash
 STRAPI_API_URL=
-STRAPI_API_TOKEN=          # NEW — read-only token, see D3
 PUBLIC_SITE_URL=
 ```
 
@@ -463,7 +467,7 @@ CLOUDINARY_KEY=            # NEW
 CLOUDINARY_SECRET=         # NEW
 ```
 
-Four additions to what the root README specifies, all consequences of decisions above. If D2 or D3 is rejected, the corresponding variables go away.
+Additions to what the root README specifies, all consequences of decisions above. `STRAPI_API_TOKEN` was dropped when D3 settled on public read instead of a token.
 
 ---
 

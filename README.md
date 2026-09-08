@@ -615,8 +615,8 @@ Astro · React · TypeScript · Strapi · REST API · PostgreSQL · Docker
 |---|---|---|
 | [1](#phase-1--architecture) | Architecture | ✅ Done |
 | [2](#phase-2--initialization) | Initialization | ✅ Done |
-| [3](#phase-3--strapi) | Strapi | 🔄 Next |
-| [4](#phase-4--astro) | Astro | ⬜ Not started |
+| [3](#phase-3--strapi) | Strapi | ✅ Done |
+| [4](#phase-4--astro) | Astro | 🔄 Next |
 | [5](#phase-5--islands) | Islands | ⬜ Not started |
 | [6](#phase-6--error-handling) | Error Handling | ⬜ Not started |
 | [7](#phase-7--docker) | Docker | ⬜ Not started |
@@ -662,15 +662,15 @@ Initialize:
 
 Implement:
 
-- [ ] Article
-- [ ] Author
-- [ ] Category
-- [ ] Tag
-- [ ] SEO component
-- [ ] Relationships
-- [ ] Media
-- [ ] Permissions
-- [ ] REST API
+- [x] Article
+- [x] Author
+- [x] Category
+- [x] Tag
+- [x] SEO component
+- [x] Relationships
+- [x] Media
+- [x] Permissions
+- [x] REST API
 
 ### Phase 4 — Astro
 

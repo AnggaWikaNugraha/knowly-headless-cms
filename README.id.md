@@ -615,8 +615,8 @@ Astro · React · TypeScript · Strapi · REST API · PostgreSQL · Docker
 |---|---|---|
 | [1](#fase-1--arsitektur) | Arsitektur | ✅ Selesai |
 | [2](#fase-2--inisialisasi) | Inisialisasi | ✅ Selesai |
-| [3](#fase-3--strapi) | Strapi | 🔄 Berikutnya |
-| [4](#fase-4--astro) | Astro | ⬜ Belum |
+| [3](#fase-3--strapi) | Strapi | ✅ Selesai |
+| [4](#fase-4--astro) | Astro | 🔄 Berikutnya |
 | [5](#fase-5--islands) | Islands | ⬜ Belum |
 | [6](#fase-6--penanganan-error) | Penanganan Error | ⬜ Belum |
 | [7](#fase-7--docker) | Docker | ⬜ Belum |
@@ -662,15 +662,15 @@ Inisialisasi:
 
 Implementasikan:
 
-- [ ] Article
-- [ ] Author
-- [ ] Category
-- [ ] Tag
-- [ ] Komponen SEO
-- [ ] Relasi
-- [ ] Media
-- [ ] Permission
-- [ ] REST API
+- [x] Article
+- [x] Author
+- [x] Category
+- [x] Tag
+- [x] Komponen SEO
+- [x] Relasi
+- [x] Media
+- [x] Permission
+- [x] REST API
 
 ### Fase 4 — Astro
 
