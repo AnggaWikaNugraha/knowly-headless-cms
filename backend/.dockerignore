@@ -1,0 +1,29 @@
+# Dependensi — dipasang ulang di dalam image
+node_modules
+
+# Artefak build & cache
+dist
+build
+.cache
+.tmp
+.strapi
+
+# Secret. Tanpa baris ini, .env ikut terpanggang ke dalam layer image dan
+# tetap bisa diekstrak meski dihapus di layer berikutnya.
+.env
+.env.*
+!.env.example
+
+# Berkas yang tidak dibutuhkan runtime maupun build
+.git
+.gitignore
+.nvmrc
+README.md
+README.id.md
+scripts
+.strapi-updater.json
+.strapi-cloud.json
+
+# CATATAN: types/ sengaja TIDAK dikecualikan. tsconfig.json mencakup
+# './**/*.ts', jadi types/generated/*.d.ts ikut dalam cakupan kompilasi —
+# membuangnya dari build context bisa membuat tsc kehilangan tipe.

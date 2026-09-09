@@ -722,11 +722,14 @@ Kontainerisasi Strapi.
 
 Buat:
 
-- [ ] `Dockerfile`
-- [ ] `.dockerignore`
-- [ ] `docker-compose.yml` jika bermanfaat
+- [x] `Dockerfile`
+- [x] `.dockerignore`
+- [x] `docker-compose.yml` jika bermanfaat
 
 Uji Strapi + PostgreSQL secara lokal.
+
+> [!NOTE]
+> Image-nya dibangun Cloud Build saat deployment, bukan di mesin developer, jadi Dockerfile pertama kali benar-benar diuji di Fase 8. `docker-compose.yml` tidak memuat service Postgres — proyek ini memakai satu database Supabase terkelola untuk kedua environment.
 
 ### Fase 8 — Deployment
 

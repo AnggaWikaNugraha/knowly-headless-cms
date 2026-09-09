@@ -393,11 +393,20 @@ Multi-stage earns its place here: building the admin panel needs the full dev to
 
 **Base image** — Debian slim rather than Alpine. Strapi depends on `sharp` for image processing, which ships prebuilt binaries for glibc; on Alpine's musl it usually has to compile from source, which means dragging in a build toolchain and a fragile build. The ~40 MB Debian costs is worth not fighting that.
 
-`.dockerignore` excludes `node_modules`, `.tmp`, `.cache`, `build`, `.git`, `.env`, and docs — smaller context, faster builds, and no chance of a stray `.env` landing in a layer.
+`strapi build` was measured to need **no environment variables at all** — it compiles TypeScript and bundles the admin panel without reading `.env`. So the builder stage carries no dummy secrets and no build arguments; every secret arrives at run time only.
 
-**No secrets in the image.** Every secret arrives as an environment variable at run time, from Secret Manager.
+`.dockerignore` excludes `node_modules`, `dist`, `build`, `.cache`, `.tmp`, `.strapi`, `.git`, `scripts`, and docs.
 
-`docker-compose.yml` is for local development only: Postgres and Strapi, with Astro on the host.
+> [!IMPORTANT]
+> Two entries matter more than the rest.
+>
+> `.env` **must** be excluded. Without it, secrets are baked into an image layer and stay extractable even if a later layer deletes the file.
+>
+> `types/` must **not** be excluded, even though it looks like generated output. `tsconfig.json` includes `./**/*.ts`, so `types/generated/*.d.ts` is inside the compilation scope; dropping it from the build context would leave `tsc` without those types.
+
+**The final image never contains a secret.** Everything sensitive is injected as an environment variable at run time, from Secret Manager.
+
+`docker-compose.yml` at the repo root builds and runs that same image locally against the same Supabase database. It has **no Postgres service**: the project uses one managed database for both environments ([D9](#0-decisions-that-need-your-approval)), so a local Postgres would only be a third database whose contents match neither.
 
 ---
 

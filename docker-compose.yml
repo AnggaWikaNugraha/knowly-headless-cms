@@ -1,0 +1,28 @@
+# Menjalankan image Strapi produksi secara lokal, memakai environment yang sama
+# dengan Cloud Run.
+#
+# Tidak ada service PostgreSQL di sini. Database proyek ini adalah Supabase
+# terkelola (lihat D9 di docs/ARCHITECTURE.md) — development dan produksi
+# memakai instance yang sama, jadi Postgres lokal hanya akan jadi database
+# ketiga yang isinya berbeda dari keduanya.
+#
+#   docker compose up --build     bangun & jalankan
+#   docker compose down           hentikan
+#
+# Astro tetap dijalankan di host dengan `npm run dev`; mengontainerkannya tidak
+# memberi manfaat apa pun.
+
+services:
+  strapi:
+    build:
+      context: ./backend
+    image: knowly-strapi
+    env_file:
+      - ./backend/.env
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 1337
+    ports:
+      - "1337:1337"
+    restart: unless-stopped

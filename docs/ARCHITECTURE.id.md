@@ -393,11 +393,20 @@ Multi-stage memang layak di sini: membangun admin panel butuh toolchain dev leng
 
 **Base image** — Debian slim, bukan Alpine. Strapi bergantung pada `sharp` untuk pemrosesan gambar, yang menyediakan binary prebuilt untuk glibc; di musl milik Alpine biasanya harus dikompilasi dari source, artinya menyeret masuk toolchain build dan proses yang rapuh. Selisih ~40 MB milik Debian setimpal dibanding bergulat dengan itu.
 
-`.dockerignore` mengecualikan `node_modules`, `.tmp`, `.cache`, `build`, `.git`, `.env`, dan dokumentasi — konteks lebih kecil, build lebih cepat, dan tidak ada peluang `.env` nyasar ke dalam layer.
+`strapi build` sudah diukur dan ternyata **tidak membutuhkan environment variable sama sekali** — dia mengompilasi TypeScript dan membundel admin panel tanpa membaca `.env`. Jadi tahap builder tidak membawa secret dummy maupun build argument; semua secret hanya masuk saat runtime.
 
-**Tidak ada secret di dalam image.** Semua secret masuk sebagai environment variable saat runtime, dari Secret Manager.
+`.dockerignore` mengecualikan `node_modules`, `dist`, `build`, `.cache`, `.tmp`, `.strapi`, `.git`, `scripts`, dan dokumentasi.
 
-`docker-compose.yml` hanya untuk pengembangan lokal: Postgres dan Strapi, dengan Astro di host.
+> [!IMPORTANT]
+> Dua entri lebih penting dari sisanya.
+>
+> `.env` **wajib** dikecualikan. Tanpa itu, secret ikut terpanggang ke dalam layer image dan tetap bisa diekstrak meski dihapus di layer berikutnya.
+>
+> `types/` justru **tidak boleh** dikecualikan, meski terlihat seperti hasil generate. `tsconfig.json` mencakup `./**/*.ts`, jadi `types/generated/*.d.ts` ada dalam cakupan kompilasi; membuangnya dari build context akan membuat `tsc` kehilangan tipe-tipe itu.
+
+**Image akhir tidak pernah memuat secret.** Semua yang sensitif disuntikkan sebagai environment variable saat runtime, dari Secret Manager.
+
+`docker-compose.yml` di root repo membangun dan menjalankan image yang sama secara lokal, terhubung ke database Supabase yang sama. Dia **tanpa service Postgres**: proyek ini memakai satu database terkelola untuk kedua environment ([D9](#0-keputusan-yang-butuh-persetujuanmu)), jadi Postgres lokal hanya akan jadi database ketiga yang isinya tidak cocok dengan keduanya.
 
 ---
 

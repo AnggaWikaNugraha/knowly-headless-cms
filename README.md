@@ -722,11 +722,14 @@ Containerize Strapi.
 
 Create:
 
-- [ ] `Dockerfile`
-- [ ] `.dockerignore`
-- [ ] `docker-compose.yml` where useful
+- [x] `Dockerfile`
+- [x] `.dockerignore`
+- [x] `docker-compose.yml` where useful
 
 Test Strapi + PostgreSQL locally.
+
+> [!NOTE]
+> The image is built by Cloud Build during deployment rather than on a developer machine, so the Dockerfile is first exercised in Phase 8. `docker-compose.yml` carries no Postgres service — the project uses one managed Supabase database for both environments.
 
 ### Phase 8 — Deployment
 
