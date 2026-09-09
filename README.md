@@ -624,8 +624,8 @@ Astro · React · TypeScript · Strapi · REST API · PostgreSQL · Docker
 | [3](#phase-3--strapi) | Strapi | ✅ Done |
 | [4](#phase-4--astro) | Astro | ✅ Done |
 | [5](#phase-5--islands) | Islands | ✅ Done |
-| [6](#phase-6--error-handling) | Error Handling | 🔄 Next |
-| [7](#phase-7--docker) | Docker | ⬜ Not started |
+| [6](#phase-6--error-handling) | Error Handling | ✅ Done |
+| [7](#phase-7--docker) | Docker | 🔄 Next |
 | [8](#phase-8--deployment) | Deployment | ⬜ Not started |
 | [9](#phase-9--production-review) | Production Review | ⬜ Not started |
 | [10](#phase-10--portfolio-preparation) | Portfolio Preparation | ⬜ Not started |
@@ -706,11 +706,11 @@ Explain the hydration strategy and confirm the framework allocation.
 
 Implement:
 
-- [ ] Loading states
-- [ ] Empty states
-- [ ] Error states
-- [ ] 404
-- [ ] API failure handling
+- [x] Loading states
+- [x] Empty states
+- [x] Error states
+- [x] 404
+- [x] API failure handling
 
 ### Phase 7 — Docker
 

@@ -90,6 +90,8 @@ flowchart LR
 
 Konsekuensi yang perlu disadari: karena halaman konten sudah di-prerender, **Cloud Run hanya menerima trafik saat build dan saat search**. Dia bisa turun ke nol instance, dan itulah sebabnya hosting ini praktis gratis.
 
+Konsekuensi kedua baru terlihat jelas ketika Strapi benar-benar mati di tengah pengembangan: **pemadaman backend tidak terlihat oleh pengunjung di produksi**. Halaman konten berupa file statis, jadi tetap tersaji normal. Pemadaman hanya bisa menggagalkan build — dan itu justru saat yang aman untuk gagal — atau menurunkan `/search`, yang mengembalikan `503` ramah alih-alih halaman error. Diverifikasi terhadap pemadaman nyata, bukan simulasi.
+
 ### Batas kepercayaan
 
 Browser tidak pernah memegang URL Strapi. URL itu hidup di environment sisi server Vercel, dipakai oleh proses build Astro dan oleh `/api/search`.

@@ -359,22 +359,48 @@ Setiap halaman artikel harus memiliki metadata yang unik.
 
 ## Penanganan Error
 
-Terapkan penanganan yang benar untuk:
+Setiap kasus di bawah diuji terhadap pemadaman Strapi yang benar-benar terjadi, bukan simulasi.
 
-- Strapi API tidak tersedia
-- Network error
-- Artikel tidak ditemukan
-- Slug tidak valid
-- Daftar artikel kosong
-- Hasil pencarian kosong
-- Gambar tidak tersedia
-- Response API yang tidak terduga
+### Saat Strapi tidak tersedia
 
-**Buat**
+| Jalur | Perilaku | Alasan |
+|---|---|---|
+| Build | **Gagal keras** dengan pesan `StrapiError` bertipe | Build yang setengah berhasil akan menerbitkan halaman artikel tanpa isi artikelnya |
+| `/` dan `/articles` (dev) | `200` dengan pemberitahuan ramah | Keduanya membungkus fetch-nya dan menampilkan `ErrorState` |
+| `/api/search` | `503`, *"Pencarian sedang tidak tersedia."* | Tidak ada kode status, hostname, atau stack trace yang sampai ke browser |
+| `/articles/[slug]` dan halaman arsip (dev) | `500` | Disengaja — lihat di bawah |
+| **Semua halaman konten di produksi** | **Tidak terpengaruh** | Semuanya file statis; hanya `/search` yang butuh Strapi hidup saat request |
 
-- Halaman 404
-- Error state yang ramah pengguna
-- Komponen empty state
+Baris terakhir itu layak diberi nama: karena halaman konten di-prerender, pemadaman Strapi tidak terlihat oleh pengunjung di produksi. Dia hanya bisa menggagalkan build atau halaman pencarian.
+
+### Kenapa halaman prerender tidak diberi try/catch
+
+`/articles/[slug]`, `/categories/[slug]`, `/tags/[slug]`, dan `/authors/[slug]` sengaja membiarkan error merambat naik.
+
+Membungkusnya akan membuat build **sukses** lalu menerbitkan halaman artikel kosong. Build yang gagal masih bisa diperbaiki; situs yang tampak baik-baik saja padahal kosong tidak. `500` yang muncul di mode dev adalah sinyal untuk developer, dan memang harus keras.
+
+### Validasi input di `/api/search`
+
+| Kata kunci | Respons |
+|---|---|
+| kosong atau 1 huruf | `200` dengan `tooShort: true` — database tidak disentuh |
+| 2–80 karakter | `200` dengan hasil |
+| lebih dari 80 karakter | `400` — kata kunci raksasa hanya membebani database tanpa hasil berarti |
+
+### Gambar tidak tersedia
+
+Gambar sampul, thumbnail feed, dan avatar penulis dibekali `onerror` inline yang menghapus elemen rusaknya. Wadah thumbnail tetap berlatar gradien, jadi gambar yang gagal menyisakan bidang rapi, bukan lubang.
+
+Itu atribut HTML biasa, bukan island — biayanya **0 kB**.
+
+### Komponen
+
+| Komponen | Menangani |
+|---|---|
+| `ErrorState.astro` | Strapi tidak terjangkau — kalimat ramah, tanpa detail teknis |
+| `EmptyState.astro` | Tidak ada artikel di kategori, tag, author, atau hasil filter |
+| `404.astro` | Route atau slug tidak dikenal |
+| `client.ts` | Timeout 10 detik, `StrapiError` bertipe, pesan yang dinormalisasi |
 
 > [!CAUTION]
-> Jangan menampilkan internal server error kepada pengguna.
+> Detail error internal tidak pernah sampai ke pengunjung. `client.ts` mengubah setiap kegagalan jadi `StrapiError` dengan pesan aman, dan halaman menampilkan kalimat tetap, bukan teks yang dilempar.

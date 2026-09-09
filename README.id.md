@@ -624,8 +624,8 @@ Astro · React · TypeScript · Strapi · REST API · PostgreSQL · Docker
 | [3](#fase-3--strapi) | Strapi | ✅ Selesai |
 | [4](#fase-4--astro) | Astro | ✅ Selesai |
 | [5](#fase-5--islands) | Islands | ✅ Selesai |
-| [6](#fase-6--penanganan-error) | Penanganan Error | 🔄 Berikutnya |
-| [7](#fase-7--docker) | Docker | ⬜ Belum |
+| [6](#fase-6--penanganan-error) | Penanganan Error | ✅ Selesai |
+| [7](#fase-7--docker) | Docker | 🔄 Berikutnya |
 | [8](#fase-8--deployment) | Deployment | ⬜ Belum |
 | [9](#fase-9--review-produksi) | Review Produksi | ⬜ Belum |
 | [10](#fase-10--persiapan-portofolio) | Persiapan Portofolio | ⬜ Belum |
@@ -706,11 +706,11 @@ Jelaskan strategi hidrasinya dan konfirmasi pembagian frameworknya.
 
 Implementasikan:
 
-- [ ] Loading state
-- [ ] Empty state
-- [ ] Error state
-- [ ] 404
-- [ ] Penanganan kegagalan API
+- [x] Loading state
+- [x] Empty state
+- [x] Error state
+- [x] 404
+- [x] Penanganan kegagalan API
 
 ### Fase 7 — Docker
 

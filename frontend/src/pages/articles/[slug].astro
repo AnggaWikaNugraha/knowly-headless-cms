@@ -82,6 +82,7 @@ const { html, headings } = renderArticle(article.content);
         alt={article.coverImage?.alternativeText ?? ''}
         width={article.coverImage?.width ?? 1200}
         height={article.coverImage?.height ?? 630}
+        onerror="this.remove()"
         class="mb-10 w-full rounded-lg object-cover"
       />
     )}

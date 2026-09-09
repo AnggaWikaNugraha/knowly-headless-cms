@@ -17,7 +17,7 @@ const avatar = mediaUrl(article.author?.avatar?.url);
   <div class="min-w-0 flex-1">
     <div class="flex items-center gap-2 text-xs text-gray-400">
       {avatar
-        ? <img src={avatar} alt="" width="20" height="20" loading="lazy" class="h-5 w-5 rounded-full object-cover" />
+        ? <img src={avatar} alt="" width="20" height="20" loading="lazy" onerror="this.remove()" class="h-5 w-5 rounded-full object-cover" />
         : <span class="grid h-5 w-5 place-items-center rounded-full bg-gray-700 text-[10px] font-semibold text-gray-300">
             {article.author?.name?.[0] ?? '?'}
           </span>}
@@ -46,7 +46,7 @@ const avatar = mediaUrl(article.author?.avatar?.url);
     </div>
   </div>
 
-  <a href={href} class="hidden shrink-0 sm:block">
+  <a href={href} class="hidden h-[9rem] w-[13rem] shrink-0 rounded bg-gradient-to-br from-gray-800 to-gray-900 sm:block">
     {thumb ? (
       <img
         src={thumb}
@@ -55,6 +55,7 @@ const avatar = mediaUrl(article.author?.avatar?.url);
         height="134"
         loading="lazy"
         decoding="async"
+        onerror="this.remove()"
         class="h-[9rem] w-[13rem] rounded object-cover"
       />
     ) : (

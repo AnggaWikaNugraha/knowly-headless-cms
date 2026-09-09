@@ -359,22 +359,48 @@ Article pages must have unique metadata.
 
 ## Error Handling
 
-Implement proper handling for:
+Every case below was exercised against a real Strapi outage, not a simulated one.
 
-- Strapi API unavailable
-- Network errors
-- Article not found
-- Invalid slug
-- Empty article list
-- Empty search results
-- Missing images
-- Unexpected API responses
+### When Strapi is unavailable
 
-**Create**
+| Path | Behaviour | Why |
+|---|---|---|
+| Build | **Fails loudly** with the typed `StrapiError` message | A build that half-succeeds would publish article pages with no article in them |
+| `/` and `/articles` (dev) | `200` with a friendly notice | Both wrap their fetches and render `ErrorState` |
+| `/api/search` | `503`, *"Pencarian sedang tidak tersedia."* | No status code, hostname or stack trace reaches the browser |
+| `/articles/[slug]` and archive pages (dev) | `500` | Deliberate — see below |
+| **All content pages in production** | **Unaffected** | They are static files; only `/search` needs Strapi alive at request time |
 
-- 404 page
-- Friendly error state
-- Empty state components
+That last row is worth naming: because content pages are prerendered, a Strapi outage is invisible to visitors in production. It can only break a build or the search page.
+
+### Why prerendered pages have no try/catch
+
+`/articles/[slug]`, `/categories/[slug]`, `/tags/[slug]` and `/authors/[slug]` deliberately let errors propagate.
+
+Wrapping them would make the build **succeed** and ship empty article pages. A failed build is recoverable; a site that looks fine while being empty is not. The `500` they return in dev is a developer-facing signal, and it should stay loud.
+
+### Input validation on `/api/search`
+
+| Query | Response |
+|---|---|
+| empty or 1 character | `200` with `tooShort: true` — no database work |
+| 2–80 characters | `200` with results |
+| over 80 characters | `400` — long queries only load the database for nothing |
+
+### Missing images
+
+Cover images, feed thumbnails and author avatars carry an inline `onerror` that removes the broken element. Thumbnail containers keep a gradient background, so a failed image leaves a tidy placeholder instead of a hole.
+
+That is a plain HTML attribute, not an island — it costs **0 kB**.
+
+### Components
+
+| Component | Handles |
+|---|---|
+| `ErrorState.astro` | Strapi unreachable — friendly wording, no technical detail |
+| `EmptyState.astro` | No articles in a category, tag, author, or filter result |
+| `404.astro` | Unknown route or unknown slug |
+| `client.ts` | 10-second timeout, typed `StrapiError`, normalised messages |
 
 > [!CAUTION]
-> Do not expose internal server errors to users.
+> Internal error detail never reaches the visitor. `client.ts` converts every failure into a `StrapiError` with a safe message, and the pages render fixed wording rather than the thrown text.

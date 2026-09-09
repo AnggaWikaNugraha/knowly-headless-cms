@@ -90,6 +90,8 @@ flowchart LR
 
 The consequence worth noticing: because content pages are prerendered, **Cloud Run receives traffic only at build time and on search**. It can scale to zero, which is why this stays essentially free to host.
 
+A second consequence only became obvious once Strapi actually went down mid-development: **a backend outage is invisible to visitors in production**. Content pages are static files, so they keep serving normally. An outage can only fail a build — which is the safe moment for it to fail — or degrade `/search`, which returns a friendly `503` rather than an error page. Verified against a real outage, not simulated.
+
 ### Trust boundary
 
 The browser never holds a Strapi URL. It lives in Vercel's server-side environment, used by the Astro build and by `/api/search`.
