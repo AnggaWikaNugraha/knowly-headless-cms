@@ -16,8 +16,7 @@ export const site = {
 /** URL publik situs. Dipakai untuk canonical URL dan tag Open Graph. */
 export const SITE_URL = import.meta.env.PUBLIC_SITE_URL ?? 'http://localhost:4321';
 
-// 'Cari' menyusul di Fase 5 bersama island pencarian — jangan menaut ke halaman
-// yang belum ada, karena hasilnya 404.
 export const nav = [
   { label: 'Artikel', href: '/articles' },
+  { label: 'Cari', href: '/search' },
 ] as const;

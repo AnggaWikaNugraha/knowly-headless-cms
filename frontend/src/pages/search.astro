@@ -1,0 +1,28 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SearchBox from '../components/react/SearchBox.tsx';
+import { site } from '../config/site';
+
+/**
+ * Hasilnya bergantung pada ?q= yang baru diketahui saat request, jadi halaman
+ * ini tidak bisa di-prerender. Satu-satunya route non-statis di situs ini.
+ */
+export const prerender = false;
+
+const q = Astro.url.searchParams.get('q') ?? '';
+---
+<BaseLayout
+  title={q ? `Cari: ${q}` : 'Cari'}
+  description={`Cari artikel di ${site.name}.`} layout="feed"
+>
+  <header class="mb-8">
+    <h1 class="text-2xl font-bold tracking-tight text-gray-50">Cari</h1>
+    <p class="mt-2 text-sm text-gray-400">Cari di judul, ringkasan, dan isi artikel.</p>
+  </header>
+
+  <!--
+    client:load, bukan idle atau visible: pengunjung datang ke halaman ini
+    memang untuk mengetik. Menunda hidrasi berarti ketikan pertama hilang.
+  -->
+  <SearchBox client:load initialQuery={q} />
+</BaseLayout>

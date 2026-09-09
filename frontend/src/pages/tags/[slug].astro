@@ -17,7 +17,7 @@ if (!tag) return Astro.redirect('/404');
 
 const { items: articles, pagination } = await getArticlesByTag(tag.slug, 1, 100);
 ---
-<BaseLayout title={`Tag: ${tag.name}`} description={`Artikel dengan tag ${tag.name}.`} feed>
+<BaseLayout title={`Tag: ${tag.name}`} description={`Artikel dengan tag ${tag.name}.`} layout="feed">
   <header class="mb-12 border-b border-gray-700 pb-8">
     <p class="text-sm font-semibold uppercase tracking-wider text-gray-400">Tag</p>
     <h1 class="mt-2 text-3xl font-bold tracking-tight text-gray-50">{tag.name}</h1>

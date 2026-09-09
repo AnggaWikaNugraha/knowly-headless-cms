@@ -1,40 +1,89 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import ArticleList from '../../components/astro/ArticleList.astro';
+import ArticleFilter from '../../components/vue/ArticleFilter.vue';
 import EmptyState from '../../components/astro/EmptyState.astro';
 import ErrorState from '../../components/astro/ErrorState.astro';
 import Pagination from '../../components/astro/Pagination.astro';
 import { getArticles } from '../../services/strapi/articles';
+import { getCategories } from '../../services/strapi/categories';
+import { getTags } from '../../services/strapi/tags';
+import { mediaUrl } from '../../services/strapi/client';
 import { site } from '../../config/site';
-import type { Article, Pagination as PaginationMeta } from '../../types/strapi';
+import type { Article, Category, Tag } from '../../types/strapi';
 
-let items: Article[] = [];
-let meta: PaginationMeta = { page: 1, pageSize: site.pageSize, pageCount: 0, total: 0 };
+/**
+ * Seluruh arsip diambil sekaligus, bukan per halaman.
+ *
+ * Filter yang hanya menyaring halaman aktif itu menyesatkan: pengunjung mengira
+ * melihat semua tulisan berkategori X, padahal cuma yang kebetulan ada di
+ * halaman itu. Pagination tetap ada sebagai jaring pengaman kalau arsipnya
+ * melampaui batas ini.
+ */
+const ARCHIVE_LIMIT = 100;
+
+let articles: Article[] = [];
+let categories: Category[] = [];
+let tags: Tag[] = [];
+let total = 0;
+let pageCount = 0;
 let failed = false;
 
 try {
-  const res = await getArticles(1, site.pageSize);
-  items = res.items;
-  meta = res.pagination;
+  const [res, cats, tagList] = await Promise.all([
+    getArticles(1, ARCHIVE_LIMIT),
+    getCategories(),
+    getTags(50),
+  ]);
+  articles = res.items;
+  total = res.pagination.total;
+  pageCount = res.pagination.pageCount;
+  categories = cats.items;
+  tags = tagList.items;
 } catch {
   failed = true;
 }
+
+// Bentuk ramping untuk island — hanya field yang benar-benar dipakai.
+const items = articles.map((a) => ({
+  slug: a.slug,
+  title: a.title,
+  excerpt: a.excerpt,
+  publishedAt: a.publishedAt,
+  category: a.category ? { name: a.category.name, slug: a.category.slug } : null,
+  author: a.author
+    ? { name: a.author.name, slug: a.author.slug, avatar: mediaUrl(a.author.avatar?.url) }
+    : null,
+  tags: a.tags.map((t) => ({ name: t.name, slug: t.slug })),
+  cover: mediaUrl(a.coverImage?.url),
+}));
 ---
-<BaseLayout title="Artikel" description={`Semua artikel di ${site.name}.`} feed>
-  <header class="mb-10">
-    <h1 class="text-3xl font-bold tracking-tight text-gray-50">Artikel</h1>
-    <p class="mt-2 text-gray-400">{meta.total} tulisan</p>
+<BaseLayout title="Artikel" description={`Semua artikel di ${site.name}.`} layout="feed">
+  <header class="mb-8">
+    <h1 class="text-2xl font-bold tracking-tight text-gray-50">Artikel</h1>
+    <p class="mt-2 text-sm text-gray-400">{total} tulisan</p>
   </header>
 
   {failed && <ErrorState />}
 
-  {!failed && (items.length > 0
-    ? <ArticleList articles={items} />
-    : <EmptyState title="Belum ada artikel" />)}
+  {!failed && items.length === 0 && <EmptyState title="Belum ada artikel" />}
+
+  {/*
+    client:idle — filter ada di atas layar tapi bukan tujuan utama kunjungan.
+    Daftarnya sudah terender dari server, jadi menunggu browser senggang tidak
+    menahan apa pun yang perlu dibaca.
+  */}
+  {!failed && items.length > 0 && (
+    <ArticleFilter
+      client:idle
+      articles={items}
+      categories={categories.map((c) => ({ name: c.name, slug: c.slug }))}
+      tags={tags.map((t) => ({ name: t.name, slug: t.slug }))}
+    />
+  )}
 
   <Pagination
     currentPage={1}
-    lastPage={meta.pageCount}
-    nextUrl={meta.pageCount > 1 ? '/articles/page/2' : undefined}
+    lastPage={pageCount}
+    nextUrl={pageCount > 1 ? '/articles/page/2' : undefined}
   />
 </BaseLayout>

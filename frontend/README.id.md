@@ -22,6 +22,7 @@ Frontend Astro untuk [Fullstack Headless CMS](../README.id.md) — situs publik 
 - [Arsitektur: Astro vs UI Framework](#arsitektur-astro-vs-ui-framework)
 - [Routing](#routing)
 - [Tema](#tema)
+- [Jebakan saat pengembangan](#jebakan-saat-pengembangan)
 - [Fitur Utama](#fitur-utama)
 - [SEO](#seo)
 - [Penanganan Error](#penanganan-error)
@@ -81,15 +82,18 @@ Tiga framework ini pilihan yang disengaja: keduanya mendemonstrasikan bahwa isla
 > [!WARNING]
 > Tiap framework mengirim runtime-nya **sendiri**, dan tidak ada yang dipakai bersama. Dua framework dalam satu halaman berarti pengunjung mengunduh keduanya. Island dari framework berbeda tidak boleh muncul di halaman yang sama.
 
-| Halaman | Island | Framework | JS terkirim |
+| Halaman | Island | Framework | JS terkirim (gzip) |
 |---|---|---|---|
-| `/` | Penjelajah topik populer | Svelte | Svelte saja |
-| `/articles` | Filter kategori & tag | Vue | Vue saja |
-| `/search` | Kotak pencarian + hasil langsung | React | React saja |
-| `/articles/[slug]` | — | — | **0 kB** |
+| `/search` | Kotak cari + hasil langsung | React | 60,4 kB |
+| `/articles` | Filter kategori & tag | Vue | 29,3 kB |
+| `/articles/[slug]` | Daftar isi, progres baca, salin kode | Svelte | 16,1 kB |
+| `/` | — | — | **0 kB** |
 | `/categories/[slug]` | — | — | **0 kB** |
 | `/tags/[slug]` | — | — | **0 kB** |
 | `/authors/[slug]` | — | — | **0 kB** |
+| `/404` | — | — | **0 kB** |
+
+Angka-angka itu diukur dari hasil build, bukan diperkirakan. Itu juga alasan tiap framework ditempatkan di situ: halaman artikel adalah yang benar-benar dibaca pengunjung, jadi dia mendapat runtime paling ringan yang tersedia. React di halaman yang sama akan berbiaya sekitar empat kali lipat.
 
 > [!CAUTION]
 > Waspadai **island global**. Apa pun yang ada di header atau footer bersama — misalnya tombol navigasi mobile — akan muncul di semua halaman dan bertabrakan dengan ketiga framework sekaligus. Bangun interaktivitas di layout bersama sebagai komponen `.astro` dengan JavaScript biasa.
@@ -182,7 +186,7 @@ Sebelum membuat komponen, tanyakan satu hal:
 
 **Tidak → `.astro`. Ya → komponen framework, memakai framework yang sudah dipegang halaman itu.**
 
-Perkiraannya sekitar selusin komponen Astro berbanding tiga komponen framework. Halaman detail artikel, kategori, tag, dan author seharusnya mengirim **0 kB JavaScript**.
+Perkiraannya sekitar selusin komponen Astro berbanding tiga komponen framework. Beranda, halaman kategori, tag, author, dan 404 mengirim **0 kB JavaScript**; halaman artikel mengirim 16,1 kB karena membawa perkakas baca.
 
 ## Routing
 
@@ -226,6 +230,36 @@ Situs ini adalah bagian blog dari portofolio Next.js yang sudah ada, jadi temany
 Font di-*self-host* lewat `@fontsource-variable/geist`, bukan diambil dari Google Fonts, supaya tidak ada permintaan pihak ketiga yang memblokir render sebelum tampilan pertama muncul.
 
 Tipografi artikel (`.prose-knowly` di `src/styles/global.css`) ditulis tangan alih-alih memakai `@tailwindcss/typography`. Yang butuh gaya hanya heading, list, blockquote, kode, dan gambar — tidak sepadan dengan satu dependensi lagi, mengikuti aturan minimal dependencies proyek ini.
+
+---
+
+## Jebakan saat pengembangan
+
+Dua kegagalan di proyek ini sempat menghabiskan waktu debug. Keduanya terlihat seperti bug kode, padahal bukan.
+
+### File route butuh dev server direstart
+
+Menambah atau menghapus file di `src/pages/` saat `npm run dev` berjalan bisa menyisakan tabel route yang basi. Gejalanya `404` pada halaman yang justru dihasilkan `npm run build` tanpa keluhan.
+
+```bash
+pkill -f 'astro dev'
+lsof -nP -iTCP:4321 -sTCP:LISTEN   # harus kosong
+npm run dev
+```
+
+Baris `lsof` itu penting: menutup terminal tidak selalu mematikan prosesnya, dan proses yang selamat akan terus menyajikan route lama.
+
+### Framework UI baru butuh cache Vite dibersihkan
+
+Setelah memasang integrasi (React, Vue, Svelte) ke proyek yang sudah pernah dijalankan di mode dev, cache pre-bundle dependensi Vite bisa basi. Island-nya lalu ter-render dari server, dihidrasi, lalu hilang — karena framework-nya termuat dua kali saat runtime dan hook-nya rusak.
+
+```bash
+pkill -f 'astro dev'
+rm -rf node_modules/.vite
+npm run dev
+```
+
+Cirinya: HTML dari server memuat komponennya, tapi browser menampilkan kosong beberapa saat kemudian. Kalau membersihkan cache tidak menolong, console browser akan menyebut error sebenarnya — `Invalid hook call`, ketidakcocokan hidrasi, atau sesuatu yang dilempar di dalam komponennya.
 
 ---
 

@@ -5,8 +5,10 @@ import Prose from '../../components/astro/Prose.astro';
 import TagList from '../../components/astro/TagList.astro';
 import ArticleList from '../../components/astro/ArticleList.astro';
 import SectionLabel from '../../components/astro/SectionLabel.astro';
+import ReadingTools from '../../components/svelte/ReadingTools.svelte';
 import { getAllArticleSlugs, getArticleBySlug, getRelatedArticles } from '../../services/strapi/articles';
 import { mediaUrl } from '../../services/strapi/client';
+import { renderArticle } from '../../utils/markdown';
 import { formatDate, readingTime } from '../../utils/date';
 
 export const getStaticPaths: GetStaticPaths = async () => {
@@ -17,14 +19,18 @@ export const getStaticPaths: GetStaticPaths = async () => {
 const { slug } = Astro.params;
 const article = await getArticleBySlug(slug!);
 
-// Slug tak dikenal tidak boleh merender halaman kosong.
 if (!article) return Astro.redirect('/404');
 
 const related = await getRelatedArticles(article, 3);
 const cover = mediaUrl(article.coverImage?.url);
 const social = mediaUrl(article.seo?.socialImage?.url) ?? cover;
+
+// Satu kali render: HTML dan daftar heading berasal dari proses yang sama,
+// jadi `id` di isi artikel dijamin cocok dengan tautan di daftar isi.
+const { html, headings } = renderArticle(article.content);
 ---
 <BaseLayout
+  layout="article"
   title={article.seo?.metaTitle ?? article.title}
   description={article.seo?.metaDescription ?? article.excerpt}
   keywords={article.seo?.keywords}
@@ -38,11 +44,18 @@ const social = mediaUrl(article.seo?.socialImage?.url) ?? cover;
     tags: article.tags.map((t) => t.name),
   }}
 >
-  <article class="mx-auto max-w-2xl">
+  {/*
+    client:idle, bukan client:visible — rail ini tersembunyi di layar sempit,
+    dan `visible` tidak akan pernah terpicu pada elemen yang tak pernah tampak,
+    sehingga bilah progres ikut mati di mobile.
+  */}
+  <ReadingTools slot="rail" client:idle headings={headings} />
+
+  <article>
     <header class="mb-10">
       <div class="mb-4 flex flex-wrap items-center gap-2 text-sm text-gray-400">
         {article.category && (
-          <a href={`/categories/${article.category.slug}`} class="font-medium text-gray-300 hover:underline">
+          <a href={`/categories/${article.category.slug}`} class="font-medium text-gray-300 hover:text-gray-100">
             {article.category.name}
           </a>
         )}
@@ -52,15 +65,13 @@ const social = mediaUrl(article.seo?.socialImage?.url) ?? cover;
         <span>{readingTime(article.content)} menit baca</span>
       </div>
 
-      <h1 class="text-3xl font-semibold leading-tight tracking-tight text-gray-50 sm:text-4xl">
-        {article.title}
-      </h1>
+      <h1 class="text-3xl font-bold leading-tight tracking-tight text-gray-50 sm:text-4xl">{article.title}</h1>
 
       <p class="mt-4 text-lg leading-relaxed text-gray-400">{article.excerpt}</p>
 
       {article.author && (
-        <a href={`/authors/${article.author.slug}`} class="mt-6 inline-flex items-center gap-3 text-sm">
-          <span class="font-medium text-gray-50 hover:underline">{article.author.name}</span>
+        <a href={`/authors/${article.author.slug}`} class="mt-6 inline-block text-sm font-medium text-gray-100 hover:underline">
+          {article.author.name}
         </a>
       )}
     </header>
@@ -75,18 +86,21 @@ const social = mediaUrl(article.seo?.socialImage?.url) ?? cover;
       />
     )}
 
-    <Prose content={article.content} />
+    <!-- data-article-body dipakai island untuk menghitung progres baca -->
+    <div data-article-body>
+      <Prose html={html} />
+    </div>
 
     {article.tags.length > 0 && (
-      <footer class="mt-12 border-t border-gray-700 pt-8">
-        <h2 class="mb-3 text-sm font-semibold uppercase tracking-wider text-gray-400">Tag</h2>
+      <footer class="mt-12 border-t border-gray-800 pt-8">
+        <h2 class="mb-3 text-xs font-semibold uppercase tracking-[0.15em] text-gray-500">Tag</h2>
         <TagList tags={article.tags} />
       </footer>
     )}
   </article>
 
   {related.length > 0 && (
-    <section class="mx-auto mt-20 max-w-2xl border-t border-gray-800 pt-12">
+    <section class="mt-20 border-t border-gray-800 pt-12">
       <SectionLabel title="Artikel terkait" />
       <ArticleList articles={related} />
     </section>

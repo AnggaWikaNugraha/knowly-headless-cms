@@ -79,7 +79,8 @@ Mayoritas pengunjung tidak pernah menyentuh Strapi sama sekali:
 ```mermaid
 flowchart LR
     U["Pengunjung"] --> CDN["Vercel CDN"]
-    CDN -->|"/, /articles/[slug],<br/>/categories, /tags, /authors"| H["HTML statis<br/>0 kB JS"]
+    CDN -->|"/, /categories, /tags, /authors"| H["HTML statis<br/>0 kB JS"]
+    CDN -->|"/articles, /articles/[slug]"| I["HTML statis<br/>+ satu island"]
     CDN -->|"/search"| F["Astro server route"]
     F --> API["/api/search"]
     API --> SL["services/strapi"]
@@ -280,15 +281,18 @@ Kedua sisi diberi nama, sehingga `author.articles` bisa langsung menyuplai halam
 
 Astro memegang setiap halaman, layout, dan komponen konten. Island framework hanya muncul di tempat yang harus berubah di layar tanpa berpindah halaman.
 
-| Halaman | Island | Framework | JS terkirim |
+| Halaman | Island | Framework | JS terkirim (gzip) |
 |---|---|---|---|
-| `/` | Penjelajah topik populer | Svelte | Svelte saja |
-| `/articles` | Filter kategori & tag | Vue | Vue saja |
-| `/search` | Kotak pencarian + hasil langsung | React | React saja |
-| `/articles/[slug]` | — | — | **0 kB** |
+| `/search` | Kotak cari + hasil langsung | React | 60,4 kB |
+| `/articles` | Filter kategori & tag | Vue | 29,3 kB |
+| `/articles/[slug]` | Daftar isi, progres baca, salin kode | Svelte | 16,1 kB |
+| `/` | — | — | **0 kB** |
 | `/categories/[slug]` | — | — | **0 kB** |
 | `/tags/[slug]` | — | — | **0 kB** |
 | `/authors/[slug]` | — | — | **0 kB** |
+| `/404` | — | — | **0 kB** |
+
+Angka-angka itu diukur dari hasil build, bukan diperkirakan. Itu juga alasan tiap framework ditempatkan di situ: halaman artikel adalah yang benar-benar dibaca pengunjung, jadi dia mendapat runtime paling ringan yang tersedia. React di halaman yang sama akan berbiaya sekitar empat kali lipat.
 
 > [!CAUTION]
 > Tidak boleh ada island framework di header atau footer bersama. Tombol navigasi mobile yang dibuat dengan React akan mendarat di ketujuh halaman dan bertabrakan dengan Vue serta Svelte. Interaktivitas di layout bersama dibuat sebagai komponen `.astro` dengan JavaScript biasa.

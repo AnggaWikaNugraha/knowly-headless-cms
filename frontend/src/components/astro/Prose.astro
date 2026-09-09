@@ -1,15 +1,15 @@
 ---
-import { marked } from 'marked';
-
 /**
- * Merender Markdown jadi HTML di server.
+ * Membungkus HTML artikel yang sudah dirender.
  *
- * `set:html` aman di sini karena isinya berasal dari CMS milik sendiri yang
- * hanya bisa ditulis editor terautentikasi — bukan input dari pengunjung.
- * Kalau sumbernya berubah jadi tidak tepercaya, HTML-nya wajib disanitasi dulu.
+ * Menerima HTML jadi, bukan Markdown mentah, supaya halaman pemanggil bisa
+ * memakai daftar heading dari proses render yang sama — kalau dirender dua
+ * kali, `id` heading berisiko tidak sinkron dengan daftar isi.
+ *
+ * `set:html` aman di sini: isinya dari CMS milik sendiri yang hanya bisa
+ * ditulis editor terautentikasi, bukan input pengunjung.
  */
-interface Props { content: string; }
-const { content } = Astro.props;
-const html = await marked.parse(content);
+interface Props { html: string; }
+const { html } = Astro.props;
 ---
 <div class="prose-knowly" set:html={html} />

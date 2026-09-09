@@ -79,7 +79,8 @@ Most visitors never touch Strapi at all:
 ```mermaid
 flowchart LR
     U["Visitor"] --> CDN["Vercel CDN"]
-    CDN -->|"/, /articles/[slug],<br/>/categories, /tags, /authors"| H["Static HTML<br/>0 kB JS"]
+    CDN -->|"/, /categories, /tags, /authors"| H["Static HTML<br/>0 kB JS"]
+    CDN -->|"/articles, /articles/[slug]"| I["Static HTML<br/>+ one island"]
     CDN -->|"/search"| F["Astro server route"]
     F --> API["/api/search"]
     API --> SL["services/strapi"]
@@ -280,15 +281,18 @@ Both sides are named, so `author.articles` powers the author page without a seco
 
 Astro owns every page, layout, and content component. A framework island appears only where something must change on screen without navigating.
 
-| Page | Island | Framework | JS shipped |
+| Page | Island | Framework | JS shipped (gzip) |
 |---|---|---|---|
-| `/` | Popular topics explorer | Svelte | Svelte only |
-| `/articles` | Category & tag filter | Vue | Vue only |
-| `/search` | Search box + live results | React | React only |
-| `/articles/[slug]` | — | — | **0 kB** |
+| `/search` | Search box + live results | React | 60.4 kB |
+| `/articles` | Category & tag filter | Vue | 29.3 kB |
+| `/articles/[slug]` | Table of contents, reading progress, copy-code | Svelte | 16.1 kB |
+| `/` | — | — | **0 kB** |
 | `/categories/[slug]` | — | — | **0 kB** |
 | `/tags/[slug]` | — | — | **0 kB** |
 | `/authors/[slug]` | — | — | **0 kB** |
+| `/404` | — | — | **0 kB** |
+
+Those figures are measured from the build output, not estimated. They are also the reason each framework sits where it does: the article page is the one visitors actually read, so it gets the lightest runtime available. React on that page would cost roughly four times as much.
 
 > [!CAUTION]
 > Nothing in the shared header or footer may be a framework island. A mobile-nav toggle built in React would land on all seven pages and collide with Vue and Svelte. Shared-layout interactivity is an `.astro` component with plain JavaScript.

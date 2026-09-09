@@ -183,14 +183,20 @@ This project runs three UI framework integrations on purpose, to demonstrate tha
 > [!WARNING]
 > **One framework per page.** Each framework ships its own runtime and none of it is shared between them, so two frameworks on one page means the visitor downloads both. Islands built with different frameworks must never appear on the same page.
 
-Proposed allocation — to be confirmed in [Phase 5](#phase-5--islands):
+Measured allocation:
 
-| Page | Island | Framework |
-|---|---|---|
-| `/` | Popular topics explorer | Svelte |
-| `/articles` | Category & tag filter | Vue |
-| `/search` | Search box + live results | React |
-| `/articles/[slug]` · `/categories/[slug]` · `/tags/[slug]` · `/authors/[slug]` | none | — (0 kB JS) |
+| Page | Island | Framework | JS shipped (gzip) |
+|---|---|---|---|
+| `/search` | Search box + live results | React | 60.4 kB |
+| `/articles` | Category & tag filter | Vue | 29.3 kB |
+| `/articles/[slug]` | Table of contents, reading progress, copy-code | Svelte | 16.1 kB |
+| `/` | — | — | **0 kB** |
+| `/categories/[slug]` | — | — | **0 kB** |
+| `/tags/[slug]` | — | — | **0 kB** |
+| `/authors/[slug]` | — | — | **0 kB** |
+| `/404` | — | — | **0 kB** |
+
+Those figures are measured from the build output, not estimated. They are also the reason each framework sits where it does: the article page is the one visitors actually read, so it gets the lightest runtime available. React on that page would cost roughly four times as much.
 
 > [!CAUTION]
 > Watch for **global islands**. Anything in the shared header or footer — a mobile navigation toggle, for instance — appears on every page and would collide with all three frameworks at once. Build shared-layout interactivity as an `.astro` component with plain JavaScript instead.
@@ -617,8 +623,8 @@ Astro · React · TypeScript · Strapi · REST API · PostgreSQL · Docker
 | [2](#phase-2--initialization) | Initialization | ✅ Done |
 | [3](#phase-3--strapi) | Strapi | ✅ Done |
 | [4](#phase-4--astro) | Astro | ✅ Done |
-| [5](#phase-5--islands) | Islands | 🔄 Next |
-| [6](#phase-6--error-handling) | Error Handling | ⬜ Not started |
+| [5](#phase-5--islands) | Islands | ✅ Done |
+| [6](#phase-6--error-handling) | Error Handling | 🔄 Next |
 | [7](#phase-7--docker) | Docker | ⬜ Not started |
 | [8](#phase-8--deployment) | Deployment | ⬜ Not started |
 | [9](#phase-9--production-review) | Production Review | ⬜ Not started |
@@ -690,9 +696,9 @@ Implement:
 
 Implement only interactive functionality:
 
-- [ ] Search
-- [ ] Filtering
-- [ ] Other justified interactive components
+- [x] Search
+- [x] Filtering
+- [x] Other justified interactive components
 
 Explain the hydration strategy and confirm the framework allocation.
 

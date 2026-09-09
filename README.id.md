@@ -183,14 +183,20 @@ Proyek ini sengaja menjalankan tiga integrasi UI framework untuk mendemonstrasik
 > [!WARNING]
 > **Satu framework per halaman.** Tiap framework mengirim runtime-nya sendiri dan tidak ada yang dipakai bersama, jadi dua framework dalam satu halaman berarti pengunjung mengunduh keduanya. Island dari framework berbeda tidak boleh muncul di halaman yang sama.
 
-Usulan pembagian — dikonfirmasi di [Fase 5](#fase-5--islands):
+Pembagian terukur:
 
-| Halaman | Island | Framework |
-|---|---|---|
-| `/` | Penjelajah topik populer | Svelte |
-| `/articles` | Filter kategori & tag | Vue |
-| `/search` | Kotak pencarian + hasil langsung | React |
-| `/articles/[slug]` · `/categories/[slug]` · `/tags/[slug]` · `/authors/[slug]` | tidak ada | — (0 kB JS) |
+| Halaman | Island | Framework | JS terkirim (gzip) |
+|---|---|---|---|
+| `/search` | Kotak cari + hasil langsung | React | 60,4 kB |
+| `/articles` | Filter kategori & tag | Vue | 29,3 kB |
+| `/articles/[slug]` | Daftar isi, progres baca, salin kode | Svelte | 16,1 kB |
+| `/` | — | — | **0 kB** |
+| `/categories/[slug]` | — | — | **0 kB** |
+| `/tags/[slug]` | — | — | **0 kB** |
+| `/authors/[slug]` | — | — | **0 kB** |
+| `/404` | — | — | **0 kB** |
+
+Angka-angka itu diukur dari hasil build, bukan diperkirakan. Itu juga alasan tiap framework ditempatkan di situ: halaman artikel adalah yang benar-benar dibaca pengunjung, jadi dia mendapat runtime paling ringan yang tersedia. React di halaman yang sama akan berbiaya sekitar empat kali lipat.
 
 > [!CAUTION]
 > Waspadai **island global**. Apa pun yang ada di header atau footer bersama — misalnya tombol navigasi mobile — akan muncul di semua halaman dan bertabrakan dengan ketiga framework sekaligus. Bangun interaktivitas di layout bersama sebagai komponen `.astro` dengan JavaScript biasa.
@@ -617,8 +623,8 @@ Astro · React · TypeScript · Strapi · REST API · PostgreSQL · Docker
 | [2](#fase-2--inisialisasi) | Inisialisasi | ✅ Selesai |
 | [3](#fase-3--strapi) | Strapi | ✅ Selesai |
 | [4](#fase-4--astro) | Astro | ✅ Selesai |
-| [5](#fase-5--islands) | Islands | 🔄 Berikutnya |
-| [6](#fase-6--penanganan-error) | Penanganan Error | ⬜ Belum |
+| [5](#fase-5--islands) | Islands | ✅ Selesai |
+| [6](#fase-6--penanganan-error) | Penanganan Error | 🔄 Berikutnya |
 | [7](#fase-7--docker) | Docker | ⬜ Belum |
 | [8](#fase-8--deployment) | Deployment | ⬜ Belum |
 | [9](#fase-9--review-produksi) | Review Produksi | ⬜ Belum |
@@ -690,9 +696,9 @@ Implementasikan:
 
 Implementasikan hanya fungsionalitas interaktif:
 
-- [ ] Search
-- [ ] Filtering
-- [ ] Komponen interaktif lain yang memang beralasan
+- [x] Search
+- [x] Filtering
+- [x] Komponen interaktif lain yang memang beralasan
 
 Jelaskan strategi hidrasinya dan konfirmasi pembagian frameworknya.
 

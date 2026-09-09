@@ -22,6 +22,7 @@ Astro frontend for the [Fullstack Headless CMS](../README.md) — the public web
 - [Architecture: Astro vs UI Frameworks](#architecture-astro-vs-ui-frameworks)
 - [Routing](#routing)
 - [Theme](#theme)
+- [Development gotchas](#development-gotchas)
 - [Core Features](#core-features)
 - [SEO](#seo)
 - [Error Handling](#error-handling)
@@ -81,15 +82,18 @@ Three frameworks are a deliberate choice: they demonstrate that Astro's islands 
 > [!WARNING]
 > Each framework ships its **own** runtime, and none of it is shared. Two frameworks on one page means the visitor downloads both. Islands of different frameworks must never appear on the same page.
 
-| Page | Island | Framework | JS shipped |
+| Page | Island | Framework | JS shipped (gzip) |
 |---|---|---|---|
-| `/` | Popular topics explorer | Svelte | Svelte only |
-| `/articles` | Category & tag filter | Vue | Vue only |
-| `/search` | Search box + live results | React | React only |
-| `/articles/[slug]` | — | — | **0 kB** |
+| `/search` | Search box + live results | React | 60.4 kB |
+| `/articles` | Category & tag filter | Vue | 29.3 kB |
+| `/articles/[slug]` | Table of contents, reading progress, copy-code | Svelte | 16.1 kB |
+| `/` | — | — | **0 kB** |
 | `/categories/[slug]` | — | — | **0 kB** |
 | `/tags/[slug]` | — | — | **0 kB** |
 | `/authors/[slug]` | — | — | **0 kB** |
+| `/404` | — | — | **0 kB** |
+
+Those figures are measured from the build output, not estimated. They are also the reason each framework sits where it does: the article page is the one visitors actually read, so it gets the lightest runtime available. React on that page would cost roughly four times as much.
 
 > [!CAUTION]
 > Watch for **global islands**. Anything in the shared header or footer — a mobile navigation toggle, for instance — appears on every page and would collide with all three frameworks at once. Build shared-layout interactivity as an `.astro` component with plain JavaScript instead.
@@ -182,7 +186,7 @@ Before creating a component, ask one question:
 
 **No → `.astro`. Yes → a framework component, in whichever framework that page already owns.**
 
-Expect roughly a dozen Astro components against three framework ones. Article detail, category, tag and author pages should ship **0 kB of JavaScript**.
+Expect roughly a dozen Astro components against three framework ones. The homepage, category, tag, author and 404 pages ship **0 kB of JavaScript**; the article page ships 16.1 kB because it carries the reading tools.
 
 ## Routing
 
@@ -226,6 +230,36 @@ This site is the blog section of an existing Next.js portfolio, so its theme is 
 Fonts are self-hosted through `@fontsource-variable/geist` rather than loaded from Google Fonts, so no render-blocking third-party request sits in front of the first paint.
 
 Article typography (`.prose-knowly` in `src/styles/global.css`) is written by hand instead of using `@tailwindcss/typography`. Only headings, lists, blockquotes, code and images needed styling, which is not worth a dependency under the project's minimal-dependencies rule.
+
+---
+
+## Development gotchas
+
+Two failure modes cost real debugging time on this project. Both look like code bugs and are not.
+
+### Route files need a dev-server restart
+
+Adding or deleting a file under `src/pages/` while `npm run dev` is running can leave the route table stale. The symptom is a `404` on a page that `npm run build` generates without complaint.
+
+```bash
+pkill -f 'astro dev'
+lsof -nP -iTCP:4321 -sTCP:LISTEN   # must be empty
+npm run dev
+```
+
+The `lsof` check matters: closing the terminal does not always kill the process, and a surviving one keeps serving the old routes.
+
+### A new UI framework needs the Vite cache cleared
+
+After installing an integration (React, Vue, Svelte) into a project that has already run in dev, Vite's pre-bundled dependency cache can be stale. The island then renders from the server, hydrates, and disappears — because the framework is loaded twice at runtime and hooks break.
+
+```bash
+pkill -f 'astro dev'
+rm -rf node_modules/.vite
+npm run dev
+```
+
+The tell is that the server HTML contains the component but the browser shows nothing after a moment. If clearing the cache does not fix it, the browser console will name the real error — `Invalid hook call`, a hydration mismatch, or something thrown inside the component.
 
 ---
 
