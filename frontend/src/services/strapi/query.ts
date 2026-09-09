@@ -46,7 +46,8 @@ export function buildQuery(params: QueryParams): string {
  */
 export const CARD_POPULATE = {
   coverImage: { fields: ['url', 'alternativeText', 'width', 'height'] },
-  author: { fields: ['name', 'slug'] },
+  // avatar ikut diambil: baris feed menampilkan penulis, seperti Medium
+  author: { fields: ['name', 'slug'], populate: { avatar: { fields: ['url', 'alternativeText'] } } },
   category: { fields: ['name', 'slug'] },
   tags: { fields: ['name', 'slug'] },
 } as const;

@@ -9,14 +9,15 @@ export const site = {
     'Knowledge base tentang arsitektur web modern',
   locale: 'id_ID',
   lang: 'id',
-  /** Jumlah artikel per halaman pada daftar artikel. */
-  pageSize: 6,
+  /** Jumlah artikel per halaman. Baris daftar jauh lebih ringkas daripada kartu. */
+  pageSize: 10,
 } as const;
 
 /** URL publik situs. Dipakai untuk canonical URL dan tag Open Graph. */
 export const SITE_URL = import.meta.env.PUBLIC_SITE_URL ?? 'http://localhost:4321';
 
+// 'Cari' menyusul di Fase 5 bersama island pencarian — jangan menaut ke halaman
+// yang belum ada, karena hasilnya 404.
 export const nav = [
   { label: 'Artikel', href: '/articles' },
-  { label: 'Cari', href: '/search' },
 ] as const;

@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import ArticleGrid from '../../components/astro/ArticleGrid.astro';
+import ArticleList from '../../components/astro/ArticleList.astro';
 import EmptyState from '../../components/astro/EmptyState.astro';
 import ErrorState from '../../components/astro/ErrorState.astro';
 import Pagination from '../../components/astro/Pagination.astro';
@@ -20,7 +20,7 @@ try {
   failed = true;
 }
 ---
-<BaseLayout title="Artikel" description={`Semua artikel di ${site.name}.`}>
+<BaseLayout title="Artikel" description={`Semua artikel di ${site.name}.`} feed>
   <header class="mb-10">
     <h1 class="text-3xl font-bold tracking-tight text-gray-50">Artikel</h1>
     <p class="mt-2 text-gray-400">{meta.total} tulisan</p>
@@ -29,7 +29,7 @@ try {
   {failed && <ErrorState />}
 
   {!failed && (items.length > 0
-    ? <ArticleGrid articles={items} />
+    ? <ArticleList articles={items} />
     : <EmptyState title="Belum ada artikel" />)}
 
   <Pagination

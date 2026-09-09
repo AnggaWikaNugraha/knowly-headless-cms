@@ -1,0 +1,10 @@
+---
+import ArticleRow from './ArticleRow.astro';
+import type { Article } from '../../types/strapi';
+
+interface Props { articles: Article[]; }
+const { articles } = Astro.props;
+---
+<div class="divide-y divide-gray-800 border-t border-gray-800">
+  {articles.map((article) => <ArticleRow article={article} />)}
+</div>

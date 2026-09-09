@@ -1,0 +1,44 @@
+---
+import { mediaUrl } from '../../services/strapi/client';
+import { formatDate } from '../../utils/date';
+import type { Article } from '../../types/strapi';
+
+/** Artikel utama di beranda — lebar penuh, judul berukuran display. */
+interface Props { article: Article; }
+const { article } = Astro.props;
+const cover = mediaUrl(article.coverImage?.url);
+const href = `/articles/${article.slug}`;
+---
+<article class="group">
+  {cover && (
+    <a href={href} class="mb-8 block overflow-hidden rounded-xl border border-gray-800">
+      <img
+        src={cover}
+        alt={article.coverImage?.alternativeText ?? ''}
+        width={article.coverImage?.width ?? 1600}
+        height={article.coverImage?.height ?? 700}
+        loading="eager"
+        decoding="async"
+        class="aspect-[2/1] w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+      />
+    </a>
+  )}
+
+  <div class="flex flex-wrap items-center gap-2 text-xs uppercase tracking-wider text-gray-500">
+    {article.category && (
+      <a href={`/categories/${article.category.slug}`} class="text-gray-400 hover:text-gray-200">
+        {article.category.name}
+      </a>
+    )}
+    <span aria-hidden="true">·</span>
+    <time datetime={article.publishedAt ?? undefined}>{formatDate(article.publishedAt)}</time>
+  </div>
+
+  <h2 class="mt-3 text-2xl font-bold leading-tight tracking-tight text-gray-50 sm:text-3xl">
+    <a href={href} class="decoration-gray-600 decoration-2 underline-offset-4 hover:underline">
+      {article.title}
+    </a>
+  </h2>
+
+  <p class="mt-3 text-base leading-relaxed text-gray-400">{article.excerpt}</p>
+</article>

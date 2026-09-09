@@ -1,7 +1,7 @@
 ---
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import ArticleGrid from '../../components/astro/ArticleGrid.astro';
+import ArticleList from '../../components/astro/ArticleList.astro';
 import EmptyState from '../../components/astro/EmptyState.astro';
 import { getTags, getTagBySlug } from '../../services/strapi/tags';
 import { getArticlesByTag } from '../../services/strapi/articles';
@@ -17,7 +17,7 @@ if (!tag) return Astro.redirect('/404');
 
 const { items: articles, pagination } = await getArticlesByTag(tag.slug, 1, 100);
 ---
-<BaseLayout title={`Tag: ${tag.name}`} description={`Artikel dengan tag ${tag.name}.`}>
+<BaseLayout title={`Tag: ${tag.name}`} description={`Artikel dengan tag ${tag.name}.`} feed>
   <header class="mb-12 border-b border-gray-700 pb-8">
     <p class="text-sm font-semibold uppercase tracking-wider text-gray-400">Tag</p>
     <h1 class="mt-2 text-3xl font-bold tracking-tight text-gray-50">{tag.name}</h1>
@@ -25,6 +25,6 @@ const { items: articles, pagination } = await getArticlesByTag(tag.slug, 1, 100)
   </header>
 
   {articles.length > 0
-    ? <ArticleGrid articles={articles} />
+    ? <ArticleList articles={articles} />
     : <EmptyState title="Belum ada artikel dengan tag ini" />}
 </BaseLayout>

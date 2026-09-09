@@ -3,7 +3,8 @@ import type { GetStaticPaths } from 'astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Prose from '../../components/astro/Prose.astro';
 import TagList from '../../components/astro/TagList.astro';
-import ArticleGrid from '../../components/astro/ArticleGrid.astro';
+import ArticleList from '../../components/astro/ArticleList.astro';
+import SectionLabel from '../../components/astro/SectionLabel.astro';
 import { getAllArticleSlugs, getArticleBySlug, getRelatedArticles } from '../../services/strapi/articles';
 import { mediaUrl } from '../../services/strapi/client';
 import { formatDate, readingTime } from '../../utils/date';
@@ -85,9 +86,9 @@ const social = mediaUrl(article.seo?.socialImage?.url) ?? cover;
   </article>
 
   {related.length > 0 && (
-    <section class="mt-20 border-t border-gray-700 pt-12">
-      <h2 class="mb-8 text-sm font-semibold uppercase tracking-wider text-gray-400">Artikel terkait</h2>
-      <ArticleGrid articles={related} />
+    <section class="mx-auto mt-20 max-w-2xl border-t border-gray-800 pt-12">
+      <SectionLabel title="Artikel terkait" />
+      <ArticleList articles={related} />
     </section>
   )}
 </BaseLayout>

@@ -1,0 +1,9 @@
+---
+/** Label section kecil dengan garis pemisah — pengikat ritme visual antar halaman. */
+interface Props { title: string; href?: string; hrefLabel?: string; }
+const { title, href, hrefLabel = 'Lihat semua' } = Astro.props;
+---
+<div class="mb-2 flex items-baseline justify-between">
+  <h2 class="text-xs font-semibold uppercase tracking-[0.15em] text-gray-500">{title}</h2>
+  {href && <a href={href} class="text-sm text-gray-400 transition-colors hover:text-gray-100">{hrefLabel} →</a>}
+</div>

@@ -3,6 +3,8 @@ import '../styles/global.css';
 import BaseHead from '../components/astro/BaseHead.astro';
 import Header from '../components/astro/Header.astro';
 import Footer from '../components/astro/Footer.astro';
+import SideNav from '../components/astro/SideNav.astro';
+import TopicRail from '../components/astro/TopicRail.astro';
 import { site } from '../config/site';
 
 interface Props {
@@ -11,6 +13,8 @@ interface Props {
   image?: string | null;
   canonical?: string | null;
   keywords?: string | null;
+  /** Tata letak tiga kolom bergaya Medium. Halaman baca memakai satu kolom. */
+  feed?: boolean;
   article?: {
     publishedAt: string | null;
     updatedAt: string;
@@ -20,21 +24,34 @@ interface Props {
   } | null;
 }
 
-const props = Astro.props;
+const { feed = false, ...head } = Astro.props;
 ---
 <!doctype html>
 <html lang={site.lang} class="scroll-smooth">
   <head>
-    <BaseHead {...props} />
+    <BaseHead {...head} />
   </head>
   <body class="flex min-h-screen flex-col antialiased">
     <Header />
-    <!-- Gradien mengikuti section blog di portofolio: from-gray-900 to-gray-800 -->
+
     <main class="flex-1 bg-gradient-to-b from-gray-900 to-gray-800 px-4 py-10">
-      <div class="mx-auto max-w-5xl">
-        <slot />
-      </div>
+      {feed ? (
+        <div class="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[13rem_minmax(0,1fr)_16rem] lg:gap-12">
+          <aside class="hidden lg:block">
+            <div class="sticky top-8"><SideNav /></div>
+          </aside>
+
+          <div class="min-w-0"><slot /></div>
+
+          <aside class="hidden lg:block">
+            <div class="sticky top-8"><TopicRail /></div>
+          </aside>
+        </div>
+      ) : (
+        <div class="mx-auto max-w-3xl"><slot /></div>
+      )}
     </main>
+
     <Footer />
   </body>
 </html>

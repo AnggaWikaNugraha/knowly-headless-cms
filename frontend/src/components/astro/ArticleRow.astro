@@ -1,0 +1,64 @@
+---
+import { mediaUrl } from '../../services/strapi/client';
+import { formatDate } from '../../utils/date';
+import type { Article } from '../../types/strapi';
+
+/**
+ * Baris feed bergaya Medium: teks di kiri, thumbnail di kanan.
+ * Thumbnail disembunyikan di layar sempit supaya judul tetap punya ruang.
+ */
+interface Props { article: Article; }
+const { article } = Astro.props;
+const href = `/articles/${article.slug}`;
+const thumb = mediaUrl(article.coverImage?.url);
+const avatar = mediaUrl(article.author?.avatar?.url);
+---
+<article class="group flex items-start gap-5 py-7 sm:gap-8">
+  <div class="min-w-0 flex-1">
+    <div class="flex items-center gap-2 text-xs text-gray-400">
+      {avatar
+        ? <img src={avatar} alt="" width="20" height="20" loading="lazy" class="h-5 w-5 rounded-full object-cover" />
+        : <span class="grid h-5 w-5 place-items-center rounded-full bg-gray-700 text-[10px] font-semibold text-gray-300">
+            {article.author?.name?.[0] ?? '?'}
+          </span>}
+      {article.author && (
+        <a href={`/authors/${article.author.slug}`} class="text-gray-300 hover:text-gray-100">{article.author.name}</a>
+      )}
+      <span aria-hidden="true">·</span>
+      <time datetime={article.publishedAt ?? undefined}>{formatDate(article.publishedAt)}</time>
+    </div>
+
+    <h3 class="mt-2 text-lg font-bold leading-snug text-gray-50 sm:text-xl">
+      <a href={href} class="line-clamp-2">{article.title}</a>
+    </h3>
+
+    <p class="mt-1.5 line-clamp-2 text-sm leading-relaxed text-gray-400">{article.excerpt}</p>
+
+    <div class="mt-4 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+      {article.category && (
+        <a href={`/categories/${article.category.slug}`} class="rounded-full bg-gray-800/70 px-2.5 py-1 text-gray-400 transition-colors hover:bg-gray-700 hover:text-gray-100">
+          {article.category.name}
+        </a>
+      )}
+      {article.tags.slice(0, 2).map((t) => (
+        <a href={`/tags/${t.slug}`} class="transition-colors hover:text-gray-300">#{t.name}</a>
+      ))}
+    </div>
+  </div>
+
+  <a href={href} class="hidden shrink-0 sm:block">
+    {thumb ? (
+      <img
+        src={thumb}
+        alt={article.coverImage?.alternativeText ?? ''}
+        width="200"
+        height="134"
+        loading="lazy"
+        decoding="async"
+        class="h-[9rem] w-[13rem] rounded object-cover"
+      />
+    ) : (
+      <div class="h-[9rem] w-[13rem] rounded bg-gradient-to-br from-gray-800 to-gray-900" />
+    )}
+  </a>
+</article>

@@ -15,9 +15,15 @@ export function getFeaturedArticles(limit = 2): Promise<Paginated<Article>> {
   });
 }
 
-/** Artikel terbaru, tanpa memandang featured. */
-export function getLatestArticles(limit = 6): Promise<Paginated<Article>> {
+/**
+ * Artikel terbaru.
+ *
+ * `exclude` dipakai beranda untuk membuang artikel yang sudah tampil sebagai
+ * hero — tanpa itu, artikel yang sama muncul dua kali di halaman yang sama.
+ */
+export function getLatestArticles(limit = 6, exclude: string[] = []): Promise<Paginated<Article>> {
   return fetchCollection<Article>(PATH, {
+    ...(exclude.length > 0 ? { filters: { documentId: { $notIn: exclude } } } : {}),
     populate: CARD_POPULATE,
     sort: SORT_NEWEST,
     pagination: { limit },

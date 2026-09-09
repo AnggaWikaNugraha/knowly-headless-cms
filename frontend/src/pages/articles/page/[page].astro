@@ -1,7 +1,7 @@
 ---
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
-import ArticleGrid from '../../../components/astro/ArticleGrid.astro';
+import ArticleList from '../../../components/astro/ArticleList.astro';
 import EmptyState from '../../../components/astro/EmptyState.astro';
 import Pagination from '../../../components/astro/Pagination.astro';
 import { getArticles } from '../../../services/strapi/articles';
@@ -25,14 +25,14 @@ export const getStaticPaths: GetStaticPaths = async () => {
 const current = Number(Astro.params.page);
 const { items, pagination } = await getArticles(current, site.pageSize);
 ---
-<BaseLayout title={`Artikel — halaman ${current}`} description={`Semua artikel di ${site.name}.`}>
+<BaseLayout title={`Artikel — halaman ${current}`} description={`Semua artikel di ${site.name}.`} feed>
   <header class="mb-10">
     <h1 class="text-3xl font-bold tracking-tight text-gray-50">Artikel</h1>
     <p class="mt-2 text-gray-400">{pagination.total} tulisan</p>
   </header>
 
   {items.length > 0
-    ? <ArticleGrid articles={items} />
+    ? <ArticleList articles={items} />
     : <EmptyState title="Belum ada artikel di halaman ini" />}
 
   <Pagination
