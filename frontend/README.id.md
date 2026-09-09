@@ -84,9 +84,9 @@ Tiga framework ini pilihan yang disengaja: keduanya mendemonstrasikan bahwa isla
 
 | Halaman | Island | Framework | JS terkirim (gzip) |
 |---|---|---|---|
-| `/search` | Kotak cari + hasil langsung | React | 60,4 kB |
-| `/articles` | Filter kategori & tag | Vue | 29,3 kB |
-| `/articles/[slug]` | Daftar isi, progres baca, salin kode | Svelte | 16,1 kB |
+| `/search` | `SearchBox.tsx` — kotak cari + hasil langsung | React | 60,4 kB |
+| `/articles` | `ArticleFilter.vue` — filter kategori & tag | Vue | 29,3 kB |
+| `/articles/[slug]` | `ReadingTools.svelte` — daftar isi, progres baca, salin kode | Svelte | 16,1 kB |
 | `/` | — | — | **0 kB** |
 | `/categories/[slug]` | — | — | **0 kB** |
 | `/tags/[slug]` | — | — | **0 kB** |
@@ -190,18 +190,20 @@ Perkiraannya sekitar selusin komponen Astro berbanding tiga komponen framework. 
 
 ## Routing
 
-| File | URL | Dihasilkan dari |
+| File | URL | Rendering |
 |---|---|---|
-| `pages/index.astro` | `/` | — |
-| `pages/articles/index.astro` | `/articles` | halaman 1 daftar |
-| `pages/articles/page/[page].astro` | `/articles/page/2`, … | halaman 2 ke atas |
-| `pages/articles/[slug].astro` | `/articles/<slug>` | setiap slug artikel |
-| `pages/categories/[slug].astro` | `/categories/<slug>` | setiap kategori |
-| `pages/tags/[slug].astro` | `/tags/<slug>` | setiap tag |
-| `pages/authors/[slug].astro` | `/authors/<slug>` | setiap author |
-| `pages/404.astro` | `/404` | — |
+| `pages/index.astro` | `/` | prerender |
+| `pages/articles/index.astro` | `/articles` | prerender — seluruh arsip, disaring di klien |
+| `pages/articles/page/[page].astro` | `/articles/page/2`, … | prerender — kelebihan di atas 100 artikel |
+| `pages/articles/[slug].astro` | `/articles/<slug>` | prerender, satu per artikel |
+| `pages/categories/[slug].astro` | `/categories/<slug>` | prerender, satu per kategori |
+| `pages/tags/[slug].astro` | `/tags/<slug>` | prerender, satu per tag |
+| `pages/authors/[slug].astro` | `/authors/<slug>` | prerender, satu per author |
+| `pages/404.astro` | `/404` | prerender |
+| `pages/search.astro` | `/search` | **saat request** — `prerender = false` |
+| `pages/api/search.ts` | `/api/search?q=` | **saat request** — JSON, proxy ke Strapi |
 
-Selain `/` dan `/404`, semuanya dihasilkan dari Strapi saat build — jadi jumlah halaman mengikuti isi konten.
+Selain `/search` dan `/api/search`, semuanya dihasilkan dari Strapi saat build — jadi jumlah halaman mengikuti isi konten. Hanya kedua route itu yang butuh Strapi hidup saat request; keduanya bergantung pada `?q=` yang mustahil diketahui saat build.
 
 > [!WARNING]
 > **Pagination sengaja ditaruh di `/articles/page/`, bukan `/articles/[...page]`.**

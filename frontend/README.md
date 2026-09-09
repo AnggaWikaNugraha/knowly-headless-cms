@@ -84,9 +84,9 @@ Three frameworks are a deliberate choice: they demonstrate that Astro's islands 
 
 | Page | Island | Framework | JS shipped (gzip) |
 |---|---|---|---|
-| `/search` | Search box + live results | React | 60.4 kB |
-| `/articles` | Category & tag filter | Vue | 29.3 kB |
-| `/articles/[slug]` | Table of contents, reading progress, copy-code | Svelte | 16.1 kB |
+| `/search` | `SearchBox.tsx` — search box + live results | React | 60.4 kB |
+| `/articles` | `ArticleFilter.vue` — category & tag filter | Vue | 29.3 kB |
+| `/articles/[slug]` | `ReadingTools.svelte` — table of contents, reading progress, copy-code | Svelte | 16.1 kB |
 | `/` | — | — | **0 kB** |
 | `/categories/[slug]` | — | — | **0 kB** |
 | `/tags/[slug]` | — | — | **0 kB** |
@@ -190,18 +190,20 @@ Expect roughly a dozen Astro components against three framework ones. The homepa
 
 ## Routing
 
-| File | URL | Generated from |
+| File | URL | Rendering |
 |---|---|---|
-| `pages/index.astro` | `/` | — |
-| `pages/articles/index.astro` | `/articles` | page 1 of the listing |
-| `pages/articles/page/[page].astro` | `/articles/page/2`, … | pages 2+ |
-| `pages/articles/[slug].astro` | `/articles/<slug>` | every article slug |
-| `pages/categories/[slug].astro` | `/categories/<slug>` | every category |
-| `pages/tags/[slug].astro` | `/tags/<slug>` | every tag |
-| `pages/authors/[slug].astro` | `/authors/<slug>` | every author |
-| `pages/404.astro` | `/404` | — |
+| `pages/index.astro` | `/` | prerendered |
+| `pages/articles/index.astro` | `/articles` | prerendered — full archive, filtered client-side |
+| `pages/articles/page/[page].astro` | `/articles/page/2`, … | prerendered — overflow past 100 articles |
+| `pages/articles/[slug].astro` | `/articles/<slug>` | prerendered, one per article |
+| `pages/categories/[slug].astro` | `/categories/<slug>` | prerendered, one per category |
+| `pages/tags/[slug].astro` | `/tags/<slug>` | prerendered, one per tag |
+| `pages/authors/[slug].astro` | `/authors/<slug>` | prerendered, one per author |
+| `pages/404.astro` | `/404` | prerendered |
+| `pages/search.astro` | `/search` | **on demand** — `prerender = false` |
+| `pages/api/search.ts` | `/api/search?q=` | **on demand** — JSON, proxies Strapi |
 
-Everything except `/` and `/404` is generated from Strapi at build time, so the page count follows the content.
+Everything except `/search` and `/api/search` is generated from Strapi at build time, so the page count follows the content. Those two are the only routes that need Strapi alive at request time; they depend on `?q=`, which cannot be known at build.
 
 > [!WARNING]
 > **Pagination deliberately lives under `/articles/page/`, not `/articles/[...page]`.**

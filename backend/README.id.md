@@ -21,6 +21,7 @@ Backend Strapi untuk [Fullstack Headless CMS](../README.id.md) — lapisan Headl
 - [Strapi Admin](#strapi-admin)
 - [CORS & Keamanan](#cors--keamanan)
 - [Akses API publik](#akses-api-publik)
+- [Konten contoh](#konten-contoh)
 
 ---
 
@@ -129,7 +130,22 @@ Content API **terbuka untuk dibaca**. Role Public di Strapi diberi `find` dan `f
 
 Pemberian izin itu dilakukan di [`src/index.ts`](src/index.ts) dalam `bootstrap()`, bukan dengan mencentang kotak di admin panel.
 
-Alasannya, Strapi menyimpan permission di **database**, bukan di file. Izin yang dicentang di database lokal tidak ikut berpindah bersama kode — instance Cloud SQL yang baru akan start tanpa permission sama sekali, dan setiap request gagal `403` hanya di produksi, lama setelah perubahannya tampak benar di lokal. Menuliskannya sebagai kode membuat setelan ini masuk version control, bisa direview, dan sama persis di semua environment.
+Alasannya, Strapi menyimpan permission di **database**, bukan di file. Izin yang dicentang di database lokal tidak ikut berpindah bersama kode — database yang belum pernah menjalankan kode ini akan start tanpa permission sama sekali, dan setiap request gagal `403` hanya di produksi, lama setelah perubahannya tampak benar di lokal. Menuliskannya sebagai kode membuat setelan ini masuk version control, bisa direview, dan sama persis di semua environment.
 
 > [!NOTE]
 > Baca terbuka berarti content API bisa dijangkau siapa pun yang menemukan URL-nya. Ini bukan kebocoran data — konten yang sama toh terbit di situs publik — tapi memungkinkan scraping, dan trafiknya bisa membangunkan Cloud Run. Untuk menutupnya, cabut pemberian izin di `bootstrap()` lalu berikan API token read-only ke Astro. Lihat D3 di [`docs/ARCHITECTURE.id.md`](../docs/ARCHITECTURE.id.md).
+
+---
+
+## Konten contoh
+
+`scripts/seed.js` mengisi database kosong supaya frontend punya sesuatu untuk dirender.
+
+```bash
+npm run seed              # dilewati kalau sudah ada artikel
+npm run seed -- --reset   # hapus dulu artikel, kategori, dan tag
+```
+
+Secara default idempoten: dijalankan dua kali tidak mengubah apa pun. `--reset` menghapus artikel, kategori, dan tag, tapi **mempertahankan author dan seluruh isi Media Library**, jadi gambar yang sudah diunggah tidak pernah ikut hilang.
+
+Script ini mem-boot Strapi secara programatik lewat `compileStrapi()` dan menulis melalui Document Service, sehingga pasangan draft/terbit, komponen, dan relasi dibuat persis seperti kalau lewat admin panel.

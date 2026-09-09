@@ -84,7 +84,8 @@ Proyek ini harus mendemonstrasikan:
 | **Frontend** | Astro · React · Vue · Svelte · TypeScript · Tailwind CSS |
 | **Backend / CMS** | Strapi Headless CMS · REST API · TypeScript jika didukung |
 | **Database** | PostgreSQL |
-| **Infrastruktur** | Docker · Google Cloud Platform · Google Cloud Run · Google Cloud SQL for PostgreSQL |
+| **Infrastruktur** | Docker · Google Cloud Platform · Google Cloud Run |
+| **Hosting database** | Supabase (PostgreSQL terkelola) — lihat D9 di [`docs/ARCHITECTURE.id.md`](docs/ARCHITECTURE.id.md) |
 | **Deployment Frontend** | Vercel |
 | **Version Control** | Git · GitHub |
 
@@ -116,7 +117,7 @@ flowchart TD
     AF[Astro Frontend]
     CR[GCP Cloud Run]
     ST[Strapi]
-    SQ[("GCP Cloud SQL<br/>PostgreSQL")]
+    SQ[("Supabase<br/>PostgreSQL")]
 
     G --> V
     G --> DK
@@ -334,7 +335,7 @@ Astro
 
 Untuk pengembangan lokal, PostgreSQL dapat dijalankan secara lokal atau melalui Docker.
 
-Untuk produksi, gunakan Google Cloud SQL for PostgreSQL.
+Database Supabase yang sama melayani development dan produksi; tidak ada instance produksi terpisah.
 
 ---
 
@@ -381,20 +382,23 @@ root/
 frontend/
 └── src/
     ├── components/
-    │   ├── astro/
-    │   ├── react/
-    │   ├── vue/
-    │   └── svelte/
-    ├── layouts/
+    │   ├── astro/          # 14 components, 0 kB JS
+    │   ├── react/          # SearchBox.tsx      → /search
+    │   ├── vue/            # ArticleFilter.vue  → /articles
+    │   └── svelte/         # ReadingTools.svelte → /articles/[slug]
+    ├── layouts/            # BaseLayout: feed | article | plain
     ├── pages/
-    │   ├── articles/
-    │   ├── categories/
-    │   ├── tags/
-    │   └── authors/
-    ├── services/
-    │   └── strapi/
+    │   ├── index.astro
+    │   ├── search.astro    # prerender = false
+    │   ├── 404.astro
+    │   ├── api/search.ts   # prerender = false
+    │   ├── articles/       # index, [slug], page/[page]
+    │   ├── categories/[slug].astro
+    │   ├── tags/[slug].astro
+    │   └── authors/[slug].astro
+    ├── services/strapi/    # client, query, articles, authors, categories, tags
     ├── types/
-    ├── utils/
+    ├── utils/              # date.ts, markdown.ts
     ├── styles/
     └── config/
 ```
@@ -458,8 +462,8 @@ Astro localhost
 | Aspek | Setup |
 |---|---|
 | **Backend produksi** | Strapi → Docker → Google Cloud Run |
-| **Database produksi** | Google Cloud SQL → PostgreSQL |
-| **Konektivitas** | Cloud Run → Cloud SQL (aman) |
+| **Database produksi** | Supabase PostgreSQL (session pooler, TLS) |
+| **Konektivitas** | Cloud Run → Supabase lewat TLS |
 
 **Kebutuhan**
 
@@ -492,7 +496,7 @@ User
  -> Astro
  -> HTTPS REST API
  -> Strapi Cloud Run
- -> Cloud SQL PostgreSQL
+ -> Supabase PostgreSQL
 ```
 
 ---
@@ -573,7 +577,7 @@ Buat README profesional yang memuat:
 | 4 | Tech stack | 12 | Arsitektur deployment |
 | 5 | Fitur | 13 | Deployment Vercel |
 | 6 | Screenshot | 14 | Deployment GCP Cloud Run |
-| 7 | Instalasi lokal | 15 | Konfigurasi Cloud SQL |
+| 7 | Instalasi lokal | 15 | Konfigurasi database |
 | 8 | Environment variable | | |
 
 ---
@@ -646,7 +650,7 @@ Sebelum menulis kode aplikasi:
 - [x] Definisikan strategi integrasi REST API.
 - [x] Definisikan konfigurasi PostgreSQL.
 - [x] Jelaskan arsitektur Docker.
-- [x] Jelaskan arsitektur GCP Cloud Run + Cloud SQL.
+- [x] Jelaskan arsitektur GCP Cloud Run.
 - [x] Jelaskan arsitektur deployment Vercel.
 
 > [!IMPORTANT]
@@ -732,7 +736,7 @@ Deploy:
 |---|---|
 | Astro | Vercel |
 | Strapi | Docker → GCP Cloud Run |
-| PostgreSQL | GCP Cloud SQL |
+| PostgreSQL | Supabase (sudah hidup) |
 
 ### Fase 9 — Review Produksi
 

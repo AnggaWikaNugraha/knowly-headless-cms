@@ -84,7 +84,8 @@ The project should demonstrate:
 | **Frontend** | Astro · React · Vue · Svelte · TypeScript · Tailwind CSS |
 | **Backend / CMS** | Strapi Headless CMS · REST API · TypeScript where supported |
 | **Database** | PostgreSQL |
-| **Infrastructure** | Docker · Google Cloud Platform · Google Cloud Run · Google Cloud SQL for PostgreSQL |
+| **Infrastructure** | Docker · Google Cloud Platform · Google Cloud Run |
+| **Database hosting** | Supabase (managed PostgreSQL) — see D9 in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
 | **Frontend Deployment** | Vercel |
 | **Version Control** | Git · GitHub |
 
@@ -116,7 +117,7 @@ flowchart TD
     AF[Astro Frontend]
     CR[GCP Cloud Run]
     ST[Strapi]
-    SQ[("GCP Cloud SQL<br/>PostgreSQL")]
+    SQ[("Supabase<br/>PostgreSQL")]
 
     G --> V
     G --> DK
@@ -334,7 +335,7 @@ Astro
 
 For local development, PostgreSQL may run locally or through Docker.
 
-For production, use Google Cloud SQL for PostgreSQL.
+The same Supabase database serves development and production; there is no separate production instance.
 
 ---
 
@@ -381,20 +382,23 @@ root/
 frontend/
 └── src/
     ├── components/
-    │   ├── astro/
-    │   ├── react/
-    │   ├── vue/
-    │   └── svelte/
-    ├── layouts/
+    │   ├── astro/          # 14 components, 0 kB JS
+    │   ├── react/          # SearchBox.tsx      → /search
+    │   ├── vue/            # ArticleFilter.vue  → /articles
+    │   └── svelte/         # ReadingTools.svelte → /articles/[slug]
+    ├── layouts/            # BaseLayout: feed | article | plain
     ├── pages/
-    │   ├── articles/
-    │   ├── categories/
-    │   ├── tags/
-    │   └── authors/
-    ├── services/
-    │   └── strapi/
+    │   ├── index.astro
+    │   ├── search.astro    # prerender = false
+    │   ├── 404.astro
+    │   ├── api/search.ts   # prerender = false
+    │   ├── articles/       # index, [slug], page/[page]
+    │   ├── categories/[slug].astro
+    │   ├── tags/[slug].astro
+    │   └── authors/[slug].astro
+    ├── services/strapi/    # client, query, articles, authors, categories, tags
     ├── types/
-    ├── utils/
+    ├── utils/              # date.ts, markdown.ts
     ├── styles/
     └── config/
 ```
@@ -458,8 +462,8 @@ Astro localhost
 | Concern | Setup |
 |---|---|
 | **Production backend** | Strapi → Docker → Google Cloud Run |
-| **Production database** | Google Cloud SQL → PostgreSQL |
-| **Connectivity** | Cloud Run → Cloud SQL (secure) |
+| **Production database** | Supabase PostgreSQL (session pooler, TLS) |
+| **Connectivity** | Cloud Run → Supabase over TLS |
 
 **Requirements**
 
@@ -492,7 +496,7 @@ User
  -> Astro
  -> HTTPS REST API
  -> Strapi Cloud Run
- -> Cloud SQL PostgreSQL
+ -> Supabase PostgreSQL
 ```
 
 ---
@@ -573,7 +577,7 @@ Create a professional README containing:
 | 4 | Tech stack | 12 | Deployment architecture |
 | 5 | Features | 13 | Vercel deployment |
 | 6 | Screenshots | 14 | GCP Cloud Run deployment |
-| 7 | Local installation | 15 | Cloud SQL configuration |
+| 7 | Local installation | 15 | Database configuration |
 | 8 | Environment variables | | |
 
 ---
@@ -646,7 +650,7 @@ Before writing application code:
 - [x] Define the REST API integration strategy.
 - [x] Define PostgreSQL configuration.
 - [x] Explain Docker architecture.
-- [x] Explain GCP Cloud Run + Cloud SQL architecture.
+- [x] Explain GCP Cloud Run architecture.
 - [x] Explain Vercel deployment architecture.
 
 > [!IMPORTANT]
@@ -732,7 +736,7 @@ Deploy:
 |---|---|
 | Astro | Vercel |
 | Strapi | Docker → GCP Cloud Run |
-| PostgreSQL | GCP Cloud SQL |
+| PostgreSQL | Supabase (already live) |
 
 ### Phase 9 — Production Review
 

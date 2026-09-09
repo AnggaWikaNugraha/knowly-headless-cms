@@ -21,7 +21,7 @@ Usulan arsitektur untuk [Fullstack Headless CMS](../README.id.md). Ini adalah ke
 - [7. Strategi integrasi REST API](#7-strategi-integrasi-rest-api)
 - [8. Konfigurasi PostgreSQL](#8-konfigurasi-postgresql)
 - [9. Arsitektur Docker](#9-arsitektur-docker)
-- [10. GCP Cloud Run + Cloud SQL](#10-gcp-cloud-run--cloud-sql)
+- [10. GCP Cloud Run](#10-gcp-cloud-run)
 - [11. Deployment Vercel](#11-deployment-vercel)
 - [Environment variable](#environment-variable)
 - [Penghalang sebelum Fase 2](#penghalang-sebelum-fase-2)
@@ -41,6 +41,7 @@ Tujuh titik di mana saya harus memilih, atau di mana README root belum mengatur 
 | D5 | **Base image Docker** | `node:22-slim` (Debian), bukan Alpine | Dependensi `sharp` milik Strapi merepotkan dibangun di Alpine; biayanya image ~40 MB lebih besar |
 | D6 | **Region Cloud Run** | `asia-southeast2` (Jakarta) | Latensi terendah untuk audiens Indonesia; alternatifnya `asia-southeast1` (Singapura) |
 | D7 | **Versi Node** | Kunci Node 22 LTS lewat `.nvmrc` | Mesin ini memakai Node 24, di luar matriks dukungan Strapi 5 — lihat [Penghalang](#penghalang-sebelum-fase-2) |
+| D9 | **Database produksi** | Supabase Postgres untuk development sekaligus produksi; tanpa Cloud SQL | Satu database terkelola, bukan dua. Menghapus instance Cloud SQL, VPC connector, dan proses migrasi data — kontennya sudah ada di Supabase. Konsekuensinya database berada di luar GCP, jadi ada satu penyedia tambahan di stack |
 | D8 | **Integrasi portofolio** | Disajikan sebagai `/blogs` di portofolio Next.js yang sudah ada lewat rewrite; tema disamakan | Menjaga aplikasi ini tetap berdiri sendiri, sehingga island dan service layer tetap terhitung sebagai karya portofolio. Alternatifnya — portofolio langsung fetch ke Strapi — akan membuang seluruh frontend ini |
 
 D2 yang paling saya tekankan: itu masalah kebenaran, bukan preferensi. Sisanya trade-off yang wajar saja kalau kamu putuskan berbeda.
@@ -68,7 +69,7 @@ flowchart LR
     E["Editor<br/>menerbitkan di Strapi"] -->|webhook| VH["Vercel<br/>Deploy Hook"]
     VH --> B["Astro build"]
     B -->|"REST, baca publik"| S["Strapi<br/>Cloud Run"]
-    S --> DB[("Cloud SQL<br/>PostgreSQL")]
+    S --> DB[("Supabase<br/>PostgreSQL")]
     B --> ST["HTML statis<br/>di Vercel CDN"]
 ```
 
@@ -85,7 +86,7 @@ flowchart LR
     F --> API["/api/search"]
     API --> SL["services/strapi"]
     SL -->|"REST"| S["Strapi<br/>Cloud Run"]
-    S --> DB[("Cloud SQL")]
+    S --> DB[("Supabase")]
 ```
 
 Konsekuensi yang perlu disadari: karena halaman konten sudah di-prerender, **Cloud Run hanya menerima trafik saat build dan saat search**. Dia bisa turun ke nol instance, dan itulah sebabnya hosting ini praktis gratis.
@@ -96,7 +97,7 @@ Konsekuensi kedua baru terlihat jelas ketika Strapi benar-benar mati di tengah p
 
 Browser tidak pernah memegang URL Strapi. URL itu hidup di environment sisi server Vercel, dipakai oleh proses build Astro dan oleh `/api/search`.
 
-Role publik Strapi diberi tepat `find` dan `findOne` pada keempat content type, tidak lebih — setiap aksi penulisan mengembalikan 403. Pemberian izin itu ditulis di `src/index.ts` (`bootstrap()`), bukan diklik di admin panel, karena Strapi menyimpan permission di **database**, bukan di file: instance Cloud SQL yang baru akan start tanpa permission sama sekali, dan setiap request gagal 403 hanya di produksi.
+Role publik Strapi diberi tepat `find` dan `findOne` pada keempat content type, tidak lebih — setiap aksi penulisan mengembalikan 403. Pemberian izin itu ditulis di `src/index.ts` (`bootstrap()`), bukan diklik di admin panel, karena Strapi menyimpan permission di **database**, bukan di file: database yang belum pernah menjalankan kode ini akan start tanpa permission sama sekali, dan setiap request gagal 403 hanya di produksi.
 
 > [!NOTE]
 > Baca publik adalah trade-off yang disengaja. Ini bukan kebocoran data — konten yang sama toh tampil di situs publik — tapi content API jadi bisa dijangkau siapa pun yang menemukan URL-nya, terbuka untuk di-scrape, dan bisa membangunkan Cloud Run dengan trafik. Jalur peningkatannya adalah API token read-only: cabut pemberian izin di `bootstrap()`, lalu tambahkan `STRAPI_API_TOKEN` ke environment frontend.
@@ -109,55 +110,48 @@ Ini memenuhi aturan README root — Astro tidak pernah menyentuh PostgreSQL, dan
 
 ```text
 fullstack-headless-cms/
-├── frontend/                    # Astro
+├── frontend/                          # Astro
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── astro/           # default — 0 kB JS
-│   │   │   ├── react/           # island /search
-│   │   │   ├── vue/             # island /articles
-│   │   │   └── svelte/          # island /
-│   │   ├── layouts/
+│   │   │   ├── astro/                 # 14 komponen — 0 kB JS
+│   │   │   ├── react/SearchBox.tsx    # island /search
+│   │   │   ├── vue/ArticleFilter.vue  # island /articles
+│   │   │   └── svelte/ReadingTools.svelte   # island /articles/[slug]
+│   │   ├── layouts/BaseLayout.astro   # feed | article | plain
 │   │   ├── pages/
 │   │   │   ├── index.astro
-│   │   │   ├── search.astro
+│   │   │   ├── search.astro           # prerender = false
 │   │   │   ├── 404.astro
-│   │   │   ├── api/
-│   │   │   │   └── search.ts    # server route, proxy untuk island
+│   │   │   ├── api/search.ts          # prerender = false
 │   │   │   ├── articles/
 │   │   │   │   ├── index.astro
-│   │   │   │   └── [slug].astro
+│   │   │   │   ├── [slug].astro
+│   │   │   │   └── page/[page].astro
 │   │   │   ├── categories/[slug].astro
 │   │   │   ├── tags/[slug].astro
 │   │   │   └── authors/[slug].astro
-│   │   ├── services/strapi/     # satu-satunya tempat fetch() muncul
-│   │   ├── types/
-│   │   ├── utils/
-│   │   ├── styles/
-│   │   └── config/
+│   │   ├── services/strapi/           # client, query, articles, authors, categories, tags
+│   │   ├── types/strapi.ts
+│   │   ├── utils/                     # date.ts, markdown.ts
+│   │   ├── styles/global.css
+│   │   └── config/site.ts
 │   ├── .env.example
 │   ├── .nvmrc
 │   └── astro.config.mjs
 │
-├── backend/                     # Strapi
+├── backend/                           # Strapi
 │   ├── src/
-│   │   ├── api/
-│   │   │   ├── article/
-│   │   │   ├── author/
-│   │   │   ├── category/
-│   │   │   └── tag/
-│   │   └── components/shared/seo.json
-│   ├── config/
-│   │   ├── database.ts
-│   │   ├── server.ts
-│   │   ├── middlewares.ts       # CORS + CSP
-│   │   └── plugins.ts           # upload provider
+│   │   ├── api/                       # article, author, category, tag
+│   │   │   └── <nama>/{content-types,routes,controllers,services}
+│   │   ├── components/shared/seo.json
+│   │   └── index.ts                   # bootstrap(): menyalakan izin baca publik
+│   ├── config/                        # database, server, admin, api, middlewares, plugins
+│   ├── scripts/seed.js                # konten contoh, mendukung --reset
 │   ├── .env.example
 │   ├── .nvmrc
-│   ├── Dockerfile
-│   └── .dockerignore
+│   └── Dockerfile
 │
-├── docs/
-├── docker-compose.yml           # Postgres + Strapi, lokal saja
+├── docs/ARCHITECTURE.md
 ├── README.md
 └── .gitignore
 ```
@@ -174,12 +168,14 @@ Sengaja dijaga sedikit. Tiap entri di bawah ini wajib untuk stack-nya atau meman
 
 | Paket | Kegunaan |
 |---|---|
-| `astro` | Framework |
-| `@astrojs/vercel` | Adapter deployment |
-| `@astrojs/react` + `react` + `react-dom` | Island `/search` |
-| `@astrojs/vue` + `vue` | Island `/articles` |
-| `@astrojs/svelte` + `svelte` | Island `/` |
-| `tailwindcss` | Styling |
+| `astro` 7 | Framework |
+| `@astrojs/vercel` | Adapter deployment, sekaligus runtime server untuk `/search` |
+| `@astrojs/react` + `react` + `react-dom` 19 | `/search` island |
+| `@astrojs/vue` + `vue` 3 | `/articles` island |
+| `@astrojs/svelte` + `svelte` 5 | `/articles/[slug]` island |
+| `tailwindcss` 4 + `@tailwindcss/vite` | Styling — konfigurasi berbasis CSS, tanpa `tailwind.config.js` |
+| `@fontsource-variable/geist` + `@fontsource-variable/geist-mono` | Font self-hosted, disamakan dengan portofolio |
+| `marked` | Merender Markdown artikel jadi HTML di server |
 | `typescript`, `@types/react`, `@types/react-dom` | Type |
 
 Tanpa library data-fetching, tanpa state manager, tanpa UI kit — sesuai README root dan [keputusan menolak TanStack Query](#7-strategi-integrasi-rest-api).
@@ -188,10 +184,13 @@ Tanpa library data-fetching, tanpa state manager, tanpa UI kit — sesuai README
 
 | Paket | Kegunaan |
 |---|---|
-| `@strapi/strapi` | Inti CMS |
-| `@strapi/plugin-users-permissions` | Role, permission, API token |
-| `pg` | Driver PostgreSQL |
+| `@strapi/strapi` 5.52 | Inti CMS |
+| `@strapi/plugin-users-permissions` | Role dan permission |
 | `@strapi/provider-upload-cloudinary` | Penyimpanan media — lihat [D2](#0-keputusan-yang-butuh-persetujuanmu) |
+| `pg` | Driver PostgreSQL |
+| `@strapi/database` | Query engine yang dipakai inti Strapi |
+| `react`, `react-dom`, `react-router-dom`, `styled-components` | Admin panel bawaan Strapi — bukan pilihan kita, dan tidak pernah dikirim ke situs publik |
+| `@strapi/plugin-cloud` | Bawaan `create-strapi-app`, tidak dipakai di sini — proyek ini deploy ke Cloud Run, bukan Strapi Cloud |
 
 > [!NOTE]
 > Nama paket dan versi mayor yang persis dikonfirmasi terhadap rilis Astro, Tailwind, dan Strapi yang benar-benar terpasang saat Fase 2. Tailwind khususnya mengubah cara integrasinya dengan Astro antara v3 dan v4, dan nama paket upload provider Strapi bergantung pada versi mayor Strapi.
@@ -356,15 +355,22 @@ Dengan begitu `STRAPI_API_URL` tetap di server, tidak perlu entri CORS untuk bro
 
 ## 8. Konfigurasi PostgreSQL
 
-**Lokal** — kontainer Postgres dari `docker-compose.yml`, dengan named volume supaya data bertahan setelah `docker compose down`. Strapi jalan di host atau di kontainer yang mengarah ke sana.
+**Satu database terkelola melayani kedua environment: Supabase Postgres.** Development terhubung dari laptop; produksi terhubung dari Cloud Run. Lihat [D9](#0-keputusan-yang-butuh-persetujuanmu).
 
-**Produksi** — Cloud SQL for PostgreSQL, diakses dari Cloud Run lewat Unix socket:
+Koneksi lewat **session pooler** Supabase — bukan direct connection, bukan transaction pooler:
 
-```text
-DATABASE_HOST=/cloudsql/PROJECT_ID:REGION:INSTANCE_ID
+```bash
+DATABASE_HOST=aws-0-<region>.pooler.supabase.com
+DATABASE_PORT=5432          # mode session
+DATABASE_SSL=true
+DATABASE_SSL_REJECT_UNAUTHORIZED=false
+DATABASE_POOL_MIN=0
+DATABASE_POOL_MAX=5
 ```
 
-Path itu disediakan oleh konektor Cloud SQL bawaan Cloud Run. Instance-nya **tidak perlu IP publik**, yang menghapus satu kelas paparan sekaligus — dan karena socket-nya lokal terhadap kontainer, konfigurasi SSL tidak diperlukan.
+Mode session itu penting. Strapi memakai Knex dengan connection pool berumur panjang; transaction pooler di port 6543 mendaur ulang koneksi setiap selesai transaksi dan merusak prepared statement, menghasilkan error yang menunjuk jauh dari penyebabnya. Direct connection sendiri IPv6-only di project baru.
+
+`DATABASE_POOL_MIN=0` mencegah Strapi membuka koneksi di muka saat boot, sehingga satu koneksi yang ditolak tidak menggagalkan seluruh proses start.
 
 `config/database.ts` membaca semua nilai dari env `DATABASE_*`, jadi image yang sama jalan di lokal maupun produksi hanya dengan environment yang berbeda.
 
@@ -395,17 +401,22 @@ Multi-stage memang layak di sini: membangun admin panel butuh toolchain dev leng
 
 ---
 
-## 10. GCP Cloud Run + Cloud SQL
+## 10. GCP Cloud Run
 
 | Komponen | Konfigurasi |
 |---|---|
 | Artifact Registry | Repository Docker yang menyimpan image Strapi |
 | Cloud Run | Service `strapi-cms`, region `asia-southeast2`, port 1337, min instance **0**, maks 2 |
-| Cloud SQL | PostgreSQL 16, tier terkecil, tanpa IP publik |
-| Secret Manager | `APP_KEYS`, `API_TOKEN_SALT`, `ADMIN_JWT_SECRET`, `TRANSFER_TOKEN_SALT`, `JWT_SECRET`, `DATABASE_PASSWORD`, `CLOUDINARY_SECRET` |
-| Service account | `roles/cloudsql.client` + `roles/secretmanager.secretAccessor`, tidak lebih |
+| Secret Manager | `APP_KEYS`, `API_TOKEN_SALT`, `ADMIN_JWT_SECRET`, `TRANSFER_TOKEN_SALT`, `JWT_SECRET`, `ENCRYPTION_KEY`, `DATABASE_PASSWORD`, `CLOUDINARY_SECRET` |
+| Service account | `roles/secretmanager.secretAccessor`, tidak lebih |
 
-Cloud Run terhubung ke Cloud SQL dengan `--add-cloudsql-instances`; tidak ada file kredensial yang pernah diunduh, dan tidak ada key GCP yang di-commit.
+Database berada di luar GCP ([D9](#0-keputusan-yang-butuh-persetujuanmu)), dan media di Cloudinary ([D2](#0-keputusan-yang-butuh-persetujuanmu)). Yang tersisa di dalam GCP hanyalah satu kontainer stateless beserta secret-nya — tanpa instance Cloud SQL, tanpa VPC connector, tanpa service account database.
+
+Image-nya dibangun Cloud Build dari `Dockerfile`, jadi tidak perlu ada Docker daemon di mesin developer:
+
+```bash
+gcloud run deploy strapi-cms --source backend --region asia-southeast2
+```
 
 **Min instance 0** terjangkau justru karena [D1](#0-keputusan-yang-butuh-persetujuanmu): halaman konten sudah di-prerender, jadi Strapi menganggur di antara build. Biayanya adalah cold start beberapa detik pada pencarian pertama setelah periode sepi — masih wajar untuk portofolio, dan lebih baik dinyatakan daripada disembunyikan.
 
@@ -414,7 +425,7 @@ Cloud Run terhubung ke Cloud SQL dengan `--add-cloudsql-instances`; tidak ada fi
 >
 > Perbaikannya adalah Cloudinary: dia yang menyimpan dan menyajikan medianya, dan Strapi hanya menyimpan URL-nya. Ini [D2](#0-keputusan-yang-butuh-persetujuanmu), dan harus diputuskan sebelum Fase 3 — konten yang dibuat tanpa itu akan kehilangan gambarnya.
 >
-> Cloudinary adalah provider yang **dipelihara resmi** oleh Strapi, jadi dia mengikuti rilis Strapi alih-alih tertinggal di belakangnya, dan dia membawa CDN serta transformasi gambar on-the-fly — `f_auto` dan `q_auto` saja sudah menghapus sebagian besar pekerjaan optimasi gambar yang biasanya harus dilakukan manual di situs konten. Cloudinary juga menempatkan media sepenuhnya di luar GCP, sehingga jejak GCP proyek ini tinggal Cloud Run, Cloud SQL, Artifact Registry, dan Secret Manager saja. Free tier-nya lebih dari cukup untuk proyek portofolio.
+> Cloudinary adalah provider yang **dipelihara resmi** oleh Strapi, jadi dia mengikuti rilis Strapi alih-alih tertinggal di belakangnya, dan dia membawa CDN serta transformasi gambar on-the-fly — `f_auto` dan `q_auto` saja sudah menghapus sebagian besar pekerjaan optimasi gambar yang biasanya harus dilakukan manual di situs konten. Cloudinary juga menempatkan media sepenuhnya di luar GCP, sehingga jejak GCP proyek ini tinggal Cloud Run, Artifact Registry, dan Secret Manager saja. Free tier-nya lebih dari cukup untuk proyek portofolio.
 
 > [!NOTE]
 > Security middleware bawaan Strapi memasang Content Security Policy yang hanya mengizinkan gambar dari origin-nya sendiri. Dengan Cloudinary, `res.cloudinary.com` harus ditambahkan ke `img-src` dan `media-src` di `config/middlewares.ts` — kalau tidak, admin panel menampilkan thumbnail rusak padahal API mengembalikan URL yang benar, dan itu terbaca seperti bug upload padahal bukan.

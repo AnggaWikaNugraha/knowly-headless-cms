@@ -21,7 +21,7 @@ Architecture proposal for the [Fullstack Headless CMS](../README.md). This is th
 - [7. REST API integration strategy](#7-rest-api-integration-strategy)
 - [8. PostgreSQL configuration](#8-postgresql-configuration)
 - [9. Docker architecture](#9-docker-architecture)
-- [10. GCP Cloud Run + Cloud SQL](#10-gcp-cloud-run--cloud-sql)
+- [10. GCP Cloud Run](#10-gcp-cloud-run)
 - [11. Vercel deployment](#11-vercel-deployment)
 - [Environment variables](#environment-variables)
 - [Blockers before Phase 2](#blockers-before-phase-2)
@@ -41,6 +41,7 @@ Seven points where I had to choose, or where the root README does not yet cover 
 | D5 | **Docker base image** | `node:22-slim` (Debian), not Alpine | Strapi's `sharp` dependency is painful to build on Alpine; costs ~40 MB more image |
 | D6 | **Cloud Run region** | `asia-southeast2` (Jakarta) | Lowest latency for an Indonesian audience; `asia-southeast1` (Singapore) is the alternative |
 | D7 | **Node version** | Pin Node 22 LTS via `.nvmrc` | This machine runs Node 24, which is outside Strapi 5's supported matrix — see [Blockers](#blockers-before-phase-2) |
+| D9 | **Production database** | Supabase Postgres for both development and production; no Cloud SQL | One managed database instead of two. Removes the Cloud SQL instance, the VPC connector and a data migration — the content already lives in Supabase. Cost: the database sits outside GCP, so it is one more provider in the stack |
 | D8 | **Portfolio integration** | Served as `/blogs` on the existing Next.js portfolio via a rewrite; theme matched to it | Keeps this app standalone, so the islands and service layer still stand as portfolio work. The alternative — the portfolio fetching Strapi directly — would discard this entire frontend |
 
 D2 is the one I would flag hardest: it is a correctness problem, not a preference. Everything else is a trade-off you could reasonably decide differently.
@@ -68,7 +69,7 @@ flowchart LR
     E["Editor<br/>publishes in Strapi"] -->|webhook| VH["Vercel<br/>Deploy Hook"]
     VH --> B["Astro build"]
     B -->|"REST, public read"| S["Strapi<br/>Cloud Run"]
-    S --> DB[("Cloud SQL<br/>PostgreSQL")]
+    S --> DB[("Supabase<br/>PostgreSQL")]
     B --> ST["Static HTML<br/>on Vercel CDN"]
 ```
 
@@ -85,7 +86,7 @@ flowchart LR
     F --> API["/api/search"]
     API --> SL["services/strapi"]
     SL -->|"REST"| S["Strapi<br/>Cloud Run"]
-    S --> DB[("Cloud SQL")]
+    S --> DB[("Supabase")]
 ```
 
 The consequence worth noticing: because content pages are prerendered, **Cloud Run receives traffic only at build time and on search**. It can scale to zero, which is why this stays essentially free to host.
@@ -96,7 +97,7 @@ A second consequence only became obvious once Strapi actually went down mid-deve
 
 The browser never holds a Strapi URL. It lives in Vercel's server-side environment, used by the Astro build and by `/api/search`.
 
-Strapi's public role grants exactly `find` and `findOne` on the four content types and nothing else — every write action returns 403. Those grants live in `src/index.ts` (`bootstrap()`) rather than being clicked in the admin panel, because Strapi stores permissions in the **database**, not in files: a fresh Cloud SQL instance would otherwise start with no permissions and every request would fail with 403 in production only.
+Strapi's public role grants exactly `find` and `findOne` on the four content types and nothing else — every write action returns 403. Those grants live in `src/index.ts` (`bootstrap()`) rather than being clicked in the admin panel, because Strapi stores permissions in the **database**, not in files: a database that has never run this code would otherwise start with no permissions, and every request would fail with 403 in production only.
 
 > [!NOTE]
 > Public read is a deliberate trade-off. It is not a data leak — the same content appears on the public site — but it does leave the content API reachable by anyone who finds the URL, open to scraping, and able to wake Cloud Run with traffic. The upgrade path is a read-only API token: remove the `bootstrap()` grant and add `STRAPI_API_TOKEN` to the frontend environment.
@@ -109,55 +110,48 @@ This satisfies the root README's rule — Astro never touches PostgreSQL, and ev
 
 ```text
 fullstack-headless-cms/
-├── frontend/                    # Astro
+├── frontend/                          # Astro
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── astro/           # default — 0 kB JS
-│   │   │   ├── react/           # /search island
-│   │   │   ├── vue/             # /articles island
-│   │   │   └── svelte/          # / island
-│   │   ├── layouts/
+│   │   │   ├── astro/                 # 14 components — 0 kB JS
+│   │   │   ├── react/SearchBox.tsx    # /search island
+│   │   │   ├── vue/ArticleFilter.vue  # /articles island
+│   │   │   └── svelte/ReadingTools.svelte   # /articles/[slug] island
+│   │   ├── layouts/BaseLayout.astro   # feed | article | plain
 │   │   ├── pages/
 │   │   │   ├── index.astro
-│   │   │   ├── search.astro
+│   │   │   ├── search.astro           # prerender = false
 │   │   │   ├── 404.astro
-│   │   │   ├── api/
-│   │   │   │   └── search.ts    # server route, proxies the island
+│   │   │   ├── api/search.ts          # prerender = false
 │   │   │   ├── articles/
 │   │   │   │   ├── index.astro
-│   │   │   │   └── [slug].astro
+│   │   │   │   ├── [slug].astro
+│   │   │   │   └── page/[page].astro
 │   │   │   ├── categories/[slug].astro
 │   │   │   ├── tags/[slug].astro
 │   │   │   └── authors/[slug].astro
-│   │   ├── services/strapi/     # the only place fetch() appears
-│   │   ├── types/
-│   │   ├── utils/
-│   │   ├── styles/
-│   │   └── config/
+│   │   ├── services/strapi/           # client, query, articles, authors, categories, tags
+│   │   ├── types/strapi.ts
+│   │   ├── utils/                     # date.ts, markdown.ts
+│   │   ├── styles/global.css
+│   │   └── config/site.ts
 │   ├── .env.example
 │   ├── .nvmrc
 │   └── astro.config.mjs
 │
-├── backend/                     # Strapi
+├── backend/                           # Strapi
 │   ├── src/
-│   │   ├── api/
-│   │   │   ├── article/
-│   │   │   ├── author/
-│   │   │   ├── category/
-│   │   │   └── tag/
-│   │   └── components/shared/seo.json
-│   ├── config/
-│   │   ├── database.ts
-│   │   ├── server.ts
-│   │   ├── middlewares.ts       # CORS + CSP
-│   │   └── plugins.ts           # upload provider
+│   │   ├── api/                       # article, author, category, tag
+│   │   │   └── <name>/{content-types,routes,controllers,services}
+│   │   ├── components/shared/seo.json
+│   │   └── index.ts                   # bootstrap(): grants public read
+│   ├── config/                        # database, server, admin, api, middlewares, plugins
+│   ├── scripts/seed.js                # sample content, supports --reset
 │   ├── .env.example
 │   ├── .nvmrc
-│   ├── Dockerfile
-│   └── .dockerignore
+│   └── Dockerfile
 │
-├── docs/
-├── docker-compose.yml           # Postgres + Strapi, local only
+├── docs/ARCHITECTURE.md
 ├── README.md
 └── .gitignore
 ```
@@ -174,12 +168,14 @@ Deliberately small. Every entry below is either required by the stack or named i
 
 | Package | Purpose |
 |---|---|
-| `astro` | Framework |
-| `@astrojs/vercel` | Deployment adapter |
-| `@astrojs/react` + `react` + `react-dom` | `/search` island |
-| `@astrojs/vue` + `vue` | `/articles` island |
-| `@astrojs/svelte` + `svelte` | `/` island |
-| `tailwindcss` | Styling |
+| `astro` 7 | Framework |
+| `@astrojs/vercel` | Deployment adapter, and the server runtime for `/search` |
+| `@astrojs/react` + `react` + `react-dom` 19 | `/search` island |
+| `@astrojs/vue` + `vue` 3 | `/articles` island |
+| `@astrojs/svelte` + `svelte` 5 | `/articles/[slug]` island |
+| `tailwindcss` 4 + `@tailwindcss/vite` | Styling — CSS-based config, no `tailwind.config.js` |
+| `@fontsource-variable/geist` + `@fontsource-variable/geist-mono` | Self-hosted fonts, matched to the portfolio |
+| `marked` | Renders article Markdown to HTML on the server |
 | `typescript`, `@types/react`, `@types/react-dom` | Types |
 
 No data-fetching library, no state manager, no UI kit — per the root README and the [earlier decision against TanStack Query](#7-rest-api-integration-strategy).
@@ -188,10 +184,13 @@ No data-fetching library, no state manager, no UI kit — per the root README an
 
 | Package | Purpose |
 |---|---|
-| `@strapi/strapi` | CMS core |
-| `@strapi/plugin-users-permissions` | Roles, permissions, API tokens |
-| `pg` | PostgreSQL driver |
+| `@strapi/strapi` 5.52 | CMS core |
+| `@strapi/plugin-users-permissions` | Roles and permissions |
 | `@strapi/provider-upload-cloudinary` | Media storage — see [D2](#0-decisions-that-need-your-approval) |
+| `pg` | PostgreSQL driver |
+| `@strapi/database` | Query engine used by Strapi core |
+| `react`, `react-dom`, `react-router-dom`, `styled-components` | Strapi's own admin panel — not our choice, and never shipped to the public site |
+| `@strapi/plugin-cloud` | Scaffolded by `create-strapi-app`, unused here — this project deploys to Cloud Run, not Strapi Cloud |
 
 > [!NOTE]
 > Exact package names and major versions are confirmed against the installed Astro, Tailwind and Strapi releases during Phase 2. Tailwind in particular changed how it integrates with Astro between v3 and v4, and the Strapi upload-provider package name depends on the Strapi major version.
@@ -356,15 +355,22 @@ That keeps `STRAPI_API_URL` on the server, needs no CORS entry for the browser, 
 
 ## 8. PostgreSQL configuration
 
-**Local** — a Postgres container from `docker-compose.yml`, with a named volume so data survives `docker compose down`. Strapi runs on the host or in a container against it.
+**One managed database serves both environments: Supabase Postgres.** Development connects to it from the laptop; production connects to it from Cloud Run. See [D9](#0-decisions-that-need-your-approval).
 
-**Production** — Cloud SQL for PostgreSQL, reached from Cloud Run over a Unix socket:
+Connections go through Supabase's **session pooler**, not the direct connection and not the transaction pooler:
 
-```text
-DATABASE_HOST=/cloudsql/PROJECT_ID:REGION:INSTANCE_ID
+```bash
+DATABASE_HOST=aws-0-<region>.pooler.supabase.com
+DATABASE_PORT=5432          # session mode
+DATABASE_SSL=true
+DATABASE_SSL_REJECT_UNAUTHORIZED=false
+DATABASE_POOL_MIN=0
+DATABASE_POOL_MAX=5
 ```
 
-That path is provided by Cloud Run's built-in Cloud SQL connector. The instance needs **no public IP**, which removes an entire class of exposure — and because the socket is local to the container, no SSL configuration is required.
+Session mode matters. Strapi uses Knex with a long-lived connection pool; the transaction pooler on port 6543 recycles connections after each transaction and breaks prepared statements, producing errors that point nowhere near the cause. The direct connection is IPv6-only on new projects.
+
+`DATABASE_POOL_MIN=0` keeps Strapi from opening connections eagerly at boot, so a single refused connection cannot fail the whole startup.
 
 `config/database.ts` reads every value from `DATABASE_*` env vars, so the same image runs locally and in production with nothing but a different environment.
 
@@ -395,17 +401,22 @@ Multi-stage earns its place here: building the admin panel needs the full dev to
 
 ---
 
-## 10. GCP Cloud Run + Cloud SQL
+## 10. GCP Cloud Run
 
 | Component | Configuration |
 |---|---|
 | Artifact Registry | Docker repository holding the Strapi image |
 | Cloud Run | Service `strapi-cms`, region `asia-southeast2`, port 1337, min instances **0**, max 2 |
-| Cloud SQL | PostgreSQL 16, smallest tier, no public IP |
-| Secret Manager | `APP_KEYS`, `API_TOKEN_SALT`, `ADMIN_JWT_SECRET`, `TRANSFER_TOKEN_SALT`, `JWT_SECRET`, `DATABASE_PASSWORD`, `CLOUDINARY_SECRET` |
-| Service account | `roles/cloudsql.client` + `roles/secretmanager.secretAccessor`, nothing more |
+| Secret Manager | `APP_KEYS`, `API_TOKEN_SALT`, `ADMIN_JWT_SECRET`, `TRANSFER_TOKEN_SALT`, `JWT_SECRET`, `ENCRYPTION_KEY`, `DATABASE_PASSWORD`, `CLOUDINARY_SECRET` |
+| Service account | `roles/secretmanager.secretAccessor`, nothing more |
 
-Cloud Run connects to Cloud SQL with `--add-cloudsql-instances`; no credential file is ever downloaded, and no GCP key is committed.
+The database lives outside GCP ([D9](#0-decisions-that-need-your-approval)), and media lives on Cloudinary ([D2](#0-decisions-that-need-your-approval)). What remains inside GCP is a single stateless container plus its secrets — no Cloud SQL instance, no VPC connector, no database service account.
+
+The image is built by Cloud Build from the `Dockerfile`, so no Docker daemon is needed on a developer machine:
+
+```bash
+gcloud run deploy strapi-cms --source backend --region asia-southeast2
+```
 
 **Min instances 0** is affordable precisely because of [D1](#0-decisions-that-need-your-approval): content pages are prerendered, so Strapi is idle between builds. The cost is a cold start of a few seconds on the first search after a quiet period — acceptable for a portfolio, and worth stating rather than hiding.
 
@@ -414,7 +425,7 @@ Cloud Run connects to Cloud SQL with `--add-cloudsql-instances`; no credential f
 >
 > The fix is Cloudinary: it stores and serves the media, and Strapi keeps only the URL. This is [D2](#0-decisions-that-need-your-approval), and it must be settled before Phase 3 — content created without it will lose its images.
 >
-> Cloudinary is Strapi's **officially maintained** provider, so it tracks Strapi releases rather than lagging behind them, and it brings a CDN and on-the-fly image transforms with it — `f_auto` and `q_auto` alone remove most of the image-optimisation work a content site would otherwise have to do by hand. It also keeps media entirely outside GCP, which leaves this project's GCP footprint at Cloud Run, Cloud SQL, Artifact Registry and Secret Manager, and nothing else. Its free tier is comfortably enough for a portfolio project.
+> Cloudinary is Strapi's **officially maintained** provider, so it tracks Strapi releases rather than lagging behind them, and it brings a CDN and on-the-fly image transforms with it — `f_auto` and `q_auto` alone remove most of the image-optimisation work a content site would otherwise have to do by hand. It also keeps media entirely outside GCP, which leaves this project's GCP footprint at Cloud Run, Artifact Registry and Secret Manager, and nothing else. Its free tier is comfortably enough for a portfolio project.
 
 > [!NOTE]
 > Strapi's security middleware ships a Content Security Policy that only permits images from its own origin. With Cloudinary, `res.cloudinary.com` has to be added to `img-src` and `media-src` in `config/middlewares.ts` — otherwise the admin panel shows broken thumbnails while the API returns perfectly valid URLs, which reads like an upload bug and is not one.

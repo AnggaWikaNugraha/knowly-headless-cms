@@ -21,6 +21,7 @@ Strapi backend for the [Fullstack Headless CMS](../README.md) — the Headless C
 - [Strapi Admin](#strapi-admin)
 - [CORS & Security](#cors--security)
 - [Public API access](#public-api-access)
+- [Sample content](#sample-content)
 
 ---
 
@@ -129,7 +130,22 @@ The content API is **open for reading**. Strapi's Public role is granted `find` 
 
 Those grants are applied in [`src/index.ts`](src/index.ts) inside `bootstrap()`, not by ticking boxes in the admin panel.
 
-The reason is that Strapi stores permissions in the **database**, not in files. A permission ticked on a local database never travels with the code — a fresh Cloud SQL instance would start with none, and every request would fail with `403` in production only, long after the change looked correct locally. Granting them in code keeps the setting version-controlled, reviewable, and identical on every environment.
+The reason is that Strapi stores permissions in the **database**, not in files. A permission ticked on a local database never travels with the code — a database that has never run this code would start with none, and every request would fail with `403` in production only, long after the change looked correct locally. Granting them in code keeps the setting version-controlled, reviewable, and identical on every environment.
 
 > [!NOTE]
 > Open read means the content API is reachable by anyone who finds its URL. That is not a data leak — the same content is published on the public site — but it does allow scraping, and traffic can wake Cloud Run. To close it, remove the `bootstrap()` grant and give Astro a read-only API token instead. See D3 in [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md).
+
+---
+
+## Sample content
+
+`scripts/seed.js` fills an empty database so the frontend has something to render.
+
+```bash
+npm run seed              # skips if any article already exists
+npm run seed -- --reset   # deletes articles, categories and tags first
+```
+
+It is idempotent by default: running it twice changes nothing. `--reset` clears articles, categories and tags but **keeps the author and everything in the Media Library**, so uploaded images are never destroyed by a reseed.
+
+The script boots Strapi programmatically through `compileStrapi()` and writes through the Document Service, so draft/published pairs, components and relations are all created the way the admin panel would create them.
