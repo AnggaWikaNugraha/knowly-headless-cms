@@ -1,6 +1,7 @@
 ---
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import PageHeading from '../../../components/astro/PageHeading.astro';
 import ArticleList from '../../../components/astro/ArticleList.astro';
 import EmptyState from '../../../components/astro/EmptyState.astro';
 import Pagination from '../../../components/astro/Pagination.astro';
@@ -26,10 +27,7 @@ const current = Number(Astro.params.page);
 const { items, pagination } = await getArticles(current, site.pageSize);
 ---
 <BaseLayout title={`Artikel — halaman ${current}`} description={`Semua artikel di ${site.name}.`} layout="feed">
-  <header class="feed-heading">
-    <h1 class="text-3xl font-bold tracking-tight text-gray-50">Artikel</h1>
-    <p class="mt-2 text-gray-400">{pagination.total} tulisan</p>
-  </header>
+  <PageHeading eyebrow={`Arsip / Halaman ${current}`} title="Masih banyak cerita." description="Lanjutkan penjelajahanmu, satu tulisan pada satu waktu." count={pagination.total} />
 
   {items.length > 0
     ? <ArticleList articles={items} />

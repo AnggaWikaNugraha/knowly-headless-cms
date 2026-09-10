@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ArticleList from '../components/astro/ArticleList.astro';
 import FeedTabs from '../components/astro/FeedTabs.astro';
+import FeaturedArticle from '../components/astro/FeaturedArticle.astro';
 import EmptyState from '../components/astro/EmptyState.astro';
 import ErrorState from '../components/astro/ErrorState.astro';
 import { getFeaturedArticles, getLatestArticles } from '../services/strapi/articles';
@@ -27,16 +28,20 @@ try {
 }
 ---
 <BaseLayout title={site.name} description={site.description} layout="feed">
-  <header class="feed-heading">
-    <h1>Ruang untuk <span class="heading-muted">ide baru.</span></h1>
+  <header class="feed-heading home-heading">
+    <span class="eyebrow"><span class="status-dot" aria-hidden="true"></span>Catatan & eksplorasi</span>
+    <h1>Ide bertemu kode.<br /><span class="heading-muted">Cerita dimulai.</span></h1>
     <p>{site.tagline}.</p>
+    <a class="text-link" href="/articles">Jelajahi semua tulisan <span aria-hidden="true">↗</span></a>
   </header>
-  <FeedTabs />
 
   {failed && <ErrorState />}
 
   {!failed && hero && (
-    <ArticleList articles={[hero, ...others]} />
+    <>
+      <FeaturedArticle article={hero} />
+      {others.length > 0 && <><div class="section-heading"><span class="eyebrow">Terus menjelajah</span><span class="section-note">Catatan terbaru</span></div><FeedTabs /><ArticleList articles={others} /></>}
+    </>
   )}
 
   {!failed && !hero && (

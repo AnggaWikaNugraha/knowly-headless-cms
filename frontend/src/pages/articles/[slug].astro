@@ -51,8 +51,9 @@ const { html, headings } = renderArticle(article.content);
   */}
   <ReadingTools slot="rail" client:idle headings={headings} />
 
-  <article>
-    <header class="mb-10">
+  <article class="article-detail">
+    <a href="/articles" class="back-link">← Kembali ke artikel</a>
+    <header class="article-heading">
       <div class="mb-4 flex flex-wrap items-center gap-2 text-sm text-gray-400">
         {article.category && (
           <a href={`/categories/${article.category.slug}`} class="font-medium text-gray-300 hover:text-gray-100">
@@ -65,13 +66,13 @@ const { html, headings } = renderArticle(article.content);
         <span>{readingTime(article.content)} menit baca</span>
       </div>
 
-      <h1 class="text-3xl font-bold leading-tight tracking-tight text-gray-50 sm:text-4xl">{article.title}</h1>
+      <h1 class="article-title">{article.title}</h1>
 
-      <p class="mt-4 text-lg leading-relaxed text-gray-400">{article.excerpt}</p>
+      <p class="article-deck">{article.excerpt}</p>
 
       {article.author && (
-        <a href={`/authors/${article.author.slug}`} class="mt-6 inline-block text-sm font-medium text-gray-100 hover:underline">
-          {article.author.name}
+        <a href={`/authors/${article.author.slug}`} class="article-author">
+          <span class="story-avatar">{article.author.name.charAt(0)}</span><span><small>Ditulis oleh</small>{article.author.name}</span>
         </a>
       )}
     </header>
@@ -83,7 +84,7 @@ const { html, headings } = renderArticle(article.content);
         width={article.coverImage?.width ?? 1200}
         height={article.coverImage?.height ?? 630}
         onerror="this.remove()"
-        class="mb-10 w-full rounded-lg object-cover"
+        class="article-cover"
       />
     )}
 

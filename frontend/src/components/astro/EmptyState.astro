@@ -2,7 +2,9 @@
 interface Props { title: string; description?: string; }
 const { title, description } = Astro.props;
 ---
-<div class="rounded-lg border border-dashed border-gray-700 px-6 py-16 text-center">
-  <p class="font-medium text-gray-100">{title}</p>
-  {description && <p class="mt-2 text-sm text-gray-400">{description}</p>}
+<div class="feed-state state-panel">
+  <span class="state-symbol" aria-hidden="true">✳</span>
+  <strong>{title}</strong>
+  <p>{description ?? 'Cerita baru akan hadir di sini. Sambil menunggu, jelajahi tulisan lainnya.'}</p>
+  <a href="/articles" class="text-link">Jelajahi artikel <span aria-hidden="true">↗</span></a>
 </div>

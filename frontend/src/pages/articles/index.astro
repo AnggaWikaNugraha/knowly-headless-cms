@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeading from '../../components/astro/PageHeading.astro';
 import ArticleFilter from '../../components/vue/ArticleFilter.vue';
 import EmptyState from '../../components/astro/EmptyState.astro';
 import ErrorState from '../../components/astro/ErrorState.astro';
@@ -58,10 +59,7 @@ const items = articles.map((a) => ({
 }));
 ---
 <BaseLayout title="Artikel" description={`Semua artikel di ${site.name}.`} layout="feed">
-  <header class="feed-heading">
-    <h1 class="text-2xl font-bold tracking-tight text-gray-50">Artikel</h1>
-    <p class="mt-2 text-sm text-gray-400">{total} tulisan</p>
-  </header>
+  <PageHeading eyebrow="Arsip tulisan" title="Sedikit rasa ingin tahu. Banyak hal baru." description="Catatan, eksperimen, dan pelajaran dari membangun untuk web. Temukan bacaan sesuai minatmu." count={failed ? undefined : total} />
 
   {failed && <ErrorState />}
 

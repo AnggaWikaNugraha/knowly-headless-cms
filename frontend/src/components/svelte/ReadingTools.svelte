@@ -104,7 +104,7 @@
 </script>
 
 <div class="pointer-events-none fixed inset-x-0 top-0 z-50 h-0.5">
-  <div class="h-full bg-gray-100 transition-[width] duration-150" style="width:{progress}%"></div>
+  <div class="h-full bg-[var(--accent)] transition-[width] duration-150" style="width:{progress}%"></div>
 </div>
 
 {#if headings.length > 0}
@@ -118,7 +118,7 @@
             class="-ml-px block border-l py-1 transition-colors
               {h.depth === 3 ? 'pl-6' : 'pl-4'}
               {activeId === h.id
-                ? 'border-gray-300 text-gray-100'
+                ? 'border-[var(--accent)] text-[var(--accent)]'
                 : 'border-transparent text-gray-500 hover:text-gray-300'}"
           >
             {h.text}

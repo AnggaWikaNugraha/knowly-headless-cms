@@ -6,7 +6,9 @@
 interface Props { title?: string; }
 const { title = 'Konten sedang tidak bisa dimuat' } = Astro.props;
 ---
-<div class="rounded-lg border border-amber-800/60 bg-amber-950/40 px-6 py-12 text-center">
-  <p class="font-medium text-amber-200">{title}</p>
-  <p class="mt-2 text-sm text-amber-300/70">Silakan coba lagi beberapa saat lagi.</p>
+<div class="feed-state state-panel" role="status">
+  <span class="state-symbol" aria-hidden="true">↻</span>
+  <strong>{title}</strong>
+  <p>Silakan coba lagi beberapa saat lagi.</p>
+  <a href={Astro.url.pathname + Astro.url.search} class="text-link">Coba lagi <span aria-hidden="true">↗</span></a>
 </div>

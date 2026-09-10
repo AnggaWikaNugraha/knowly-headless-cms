@@ -1,6 +1,7 @@
 ---
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeading from '../../components/astro/PageHeading.astro';
 import ArticleList from '../../components/astro/ArticleList.astro';
 import EmptyState from '../../components/astro/EmptyState.astro';
 import { getTags, getTagBySlug } from '../../services/strapi/tags';
@@ -18,11 +19,7 @@ if (!tag) return Astro.redirect('/404');
 const { items: articles, pagination } = await getArticlesByTag(tag.slug, 1, 100);
 ---
 <BaseLayout title={`Tag: ${tag.name}`} description={`Artikel dengan tag ${tag.name}.`} layout="feed">
-  <header class="feed-heading">
-    <p class="text-sm font-semibold uppercase tracking-wider text-gray-400">Tag</p>
-    <h1 class="mt-2 text-3xl font-bold tracking-tight text-gray-50">{tag.name}</h1>
-    <p class="mt-3 text-sm text-gray-400">{pagination.total} artikel</p>
-  </header>
+  <PageHeading eyebrow="Jelajahi / Topik" title={`#${tag.name}`} description={`Ikuti rasa ingin tahumu. Semua tulisan tentang ${tag.name}, di satu tempat.`} count={pagination.total} />
 
   {articles.length > 0
     ? <ArticleList articles={articles} />

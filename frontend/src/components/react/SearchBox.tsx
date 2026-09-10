@@ -83,13 +83,14 @@ export default function SearchBox({ initialQuery = '' }: { initialQuery?: string
   return (
     <div>
       <header className="feed-heading">
-        <h1>{query.trim() ? <><span className="heading-muted">Hasil untuk </span>{query.trim()}</> : <>Temukan <span className="heading-muted">ide baru.</span></>}</h1>
-        {!query.trim() && <p>Cari di judul, ringkasan, dan isi artikel.</p>}
+        <span className="eyebrow">Ikuti rasa ingin tahu</span>
+        <h1>{query.trim() ? <><span className="heading-muted">Hasil untuk </span>{query.trim()}</> : <>Satu kata.<br /><span className="heading-muted">Banyak kemungkinan.</span></>}</h1>
+        {!query.trim() && <p>Cari ide, teknologi, atau jawaban yang sedang kamu butuhkan.</p>}
       </header>
       <label htmlFor="q" className="sr-only">Cari artikel</label>
       <div className="search-field">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><circle cx="10.5" cy="10.5" r="7.5" /><path d="m16 16 5 5" /></svg>
-        <input id="q" type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cari artikel…" autoComplete="off" maxLength={80} />
+        <input id="q" type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Apa yang ingin kamu pelajari?" autoComplete="off" maxLength={80} />
       </div>
       <div className="feed-tabs">
         <span className="feed-tab feed-tab--active">Artikel</span>
@@ -97,7 +98,7 @@ export default function SearchBox({ initialQuery = '' }: { initialQuery?: string
         {status === 'done' && <span className="feed-result-count">{total} hasil</span>}
       </div>
       <div className="search-results" aria-live="polite" aria-busy={status === 'loading'}>
-        {status === 'idle' && <p className="feed-state">{query.trim().length > 0 ? 'Ketik minimal 2 huruf.' : 'Tulisan berikutnya yang menginspirasi Anda dimulai dari satu kata.'}</p>}
+        {status === 'idle' && <div className="feed-state state-panel"><span className="state-symbol" aria-hidden="true">⌕</span><strong>{query.trim().length > 0 ? 'Sedikit lagi…' : 'Mulai dari rasa penasaran.'}</strong><p>{query.trim().length > 0 ? 'Ketik minimal 2 huruf untuk mulai mencari.' : 'Masukkan kata kunci untuk menemukan bacaan berikutnya.'}</p></div>}
         {status === 'loading' && <p className="feed-state">Mencari…</p>}
         {status === 'error' && <div className="feed-state"><strong>Pencarian sedang tidak tersedia</strong><p>Silakan coba lagi beberapa saat lagi.</p></div>}
         {status === 'done' && results.length === 0 && (

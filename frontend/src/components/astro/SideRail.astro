@@ -4,9 +4,8 @@ import { portfolioNav, PORTFOLIO_URL } from '../../config/site';
 /**
  * Rail navigasi tingkat portofolio.
  *
- * Bentuknya disalin dari `components/navbar` milik portofolio — geometri,
- * blur, bayangan, dan tooltip-nya sama — supaya pengunjung tidak merasa
- * berpindah situs saat masuk ke bagian blog.
+ * Kapsul horizontal di bawah pada mobile, rail vertikal di kiri pada desktop.
+ * Gaya dan warna mengikuti navigasi portofolio.
  *
  * Isinya menunjuk keluar ke halaman portofolio, bukan ke halaman Knowly.
  * Navigasi internal Knowly ada di SideNav, di kolom kiri halaman feed.
@@ -15,8 +14,6 @@ import { portfolioNav, PORTFOLIO_URL } from '../../config/site';
  * paket `lucide`: lima ikon tidak sepadan dengan satu dependensi, dan
  * komponen ini harus tetap 0 kB JavaScript.
  */
-const path = Astro.url.pathname;
-
 // Blog dianggap aktif selama pengunjung berada di dalam Knowly.
 const isActive = (item: (typeof portfolioNav)[number]) => !item.external;
 
@@ -25,7 +22,7 @@ const hrefFor = (item: (typeof portfolioNav)[number]) =>
 ---
 <nav
   aria-label="Navigasi portofolio"
-  class="fixed left-2 top-1/2 z-50 flex -translate-y-1/2 flex-col gap-1 rounded-full border border-white/10 bg-gray-900/90 p-1 text-gray-400 shadow-2xl shadow-black/40 backdrop-blur-xl sm:left-4 sm:p-1.5 xl:left-6"
+  class="portfolio-dock"
 >
   {portfolioNav.map((item) => (
     <a
@@ -33,10 +30,8 @@ const hrefFor = (item: (typeof portfolioNav)[number]) =>
       aria-label={item.label}
       aria-current={isActive(item) ? 'page' : undefined}
       class:list={[
-        'group relative grid h-9 w-9 place-items-center rounded-full outline-none transition-all duration-200 focus-visible:ring-2 focus-visible:ring-white/70 sm:h-11 sm:w-11',
-        isActive(item)
-          ? 'bg-white text-gray-950 shadow-lg shadow-black/30'
-          : 'hover:bg-white/[0.08] hover:text-white',
+        'dock-link',
+        { 'is-active': isActive(item) },
       ]}
     >
       <svg
@@ -84,7 +79,7 @@ const hrefFor = (item: (typeof portfolioNav)[number]) =>
 
       <span
         aria-hidden="true"
-        class="pointer-events-none absolute left-full ml-3 translate-x-1 whitespace-nowrap rounded-lg border border-white/10 bg-gray-900 px-2.5 py-1.5 text-xs font-medium text-gray-200 opacity-0 shadow-xl transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100"
+        class="dock-tooltip"
       >
         {item.label}
       </span>

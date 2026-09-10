@@ -7,12 +7,12 @@ interface Props {
   nextUrl?: string;
 }
 const { currentPage, lastPage, prevUrl, nextUrl } = Astro.props;
-const base = 'rounded-md border px-4 py-2 text-sm transition-colors';
-const active = 'border-gray-700 text-gray-300 hover:border-gray-500 hover:text-gray-50';
-const muted = 'border-gray-800 text-gray-700';
+const base = 'pagination-link';
+const active = '';
+const muted = 'is-disabled';
 ---
 {lastPage > 1 && (
-  <nav class="mt-16 flex items-center justify-between" aria-label="Navigasi halaman">
+  <nav class="pagination" aria-label="Navigasi halaman">
     {prevUrl
       ? <a href={prevUrl} class:list={[base, active]}>← Sebelumnya</a>
       : <span class:list={[base, muted]} aria-disabled="true">← Sebelumnya</span>}

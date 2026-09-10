@@ -1,0 +1,15 @@
+---
+interface Props {
+  eyebrow: string;
+  title: string;
+  description?: string | null;
+  count?: number;
+}
+const { eyebrow, title, description, count } = Astro.props;
+---
+<header class="feed-heading">
+  <span class="eyebrow">{eyebrow}</span>
+  <h1>{title}</h1>
+  {description && <p>{description}</p>}
+  {count !== undefined && <div class="heading-count"><span class="status-dot" aria-hidden="true"></span>{count} tulisan untuk dijelajahi</div>}
+</header>
