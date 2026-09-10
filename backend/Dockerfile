@@ -46,6 +46,18 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/database ./database
 COPY --from=builder /app/favicon.png ./favicon.png
 
+# tsconfig.json WAJIB ada di runtime, bukan hanya saat build.
+#
+# Strapi memakainya untuk mengenali proyek ini sebagai TypeScript, dan dari
+# situ tahu bahwa kode yang dijalankan ada di dist/. Tanpa file ini Strapi
+# mengira ini proyek JavaScript, mencari config/ di root, tidak menemukannya,
+# lalu gagal dengan:
+#
+#   Cannot destructure property 'client' of 'db.config.connection'
+#
+# Pesan itu tidak menyebut-nyebut tsconfig sama sekali. Jangan dihapus.
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
+
 # Jalan sebagai non-root. Image node menyediakan user `node`.
 RUN chown -R node:node /app
 USER node
