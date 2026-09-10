@@ -9,14 +9,14 @@
 [![Strapi](https://img.shields.io/badge/Strapi-4945FF?style=flat&logo=strapi&logoColor=white)](https://strapi.io)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com)
-[![Google Cloud](https://img.shields.io/badge/Google_Cloud-4285F4?style=flat&logo=googlecloud&logoColor=white)](https://cloud.google.com)
+[![Render](https://img.shields.io/badge/Render-46E3B7?style=flat&logo=render&logoColor=white)](https://render.com)
 [![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat&logo=vercel&logoColor=white)](https://vercel.com)
 
 **English** · [Bahasa Indonesia](README.id.md)
 
 Build a production-ready Headless CMS / Knowledge Management System as a portfolio project.
 
-The project should demonstrate real-world Full-Stack Development using Astro, React, TypeScript, Strapi, REST API, PostgreSQL, Docker, and Google Cloud Platform.
+The project should demonstrate real-world Full-Stack Development using Astro, React, TypeScript, Strapi, REST API, PostgreSQL, Docker, and Render.
 
 > [!IMPORTANT]
 > Do **NOT** generate the entire application at once.
@@ -41,7 +41,7 @@ The project should demonstrate real-world Full-Stack Development using Astro, Re
 - [Project Structure](#project-structure)
 - [Docker](#docker)
 - [Local Development](#local-development)
-- [Google Cloud Platform](#google-cloud-platform)
+- [Render](#render)
 - [Vercel](#vercel)
 - [Environment Variables](#environment-variables)
 - [Git & GitHub](#git--github)
@@ -84,7 +84,7 @@ The project should demonstrate:
 | **Frontend** | Astro · React · Vue · Svelte · TypeScript · Tailwind CSS |
 | **Backend / CMS** | Strapi Headless CMS · REST API · TypeScript where supported |
 | **Database** | PostgreSQL |
-| **Infrastructure** | Docker · Google Cloud Platform · Google Cloud Run |
+| **Infrastructure** | Docker · Render · Render |
 | **Database hosting** | Supabase (managed PostgreSQL) — see D9 in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
 | **Frontend Deployment** | Vercel |
 | **Version Control** | Git · GitHub |
@@ -115,7 +115,7 @@ flowchart TD
     V[Vercel]
     DK[Docker]
     AF[Astro Frontend]
-    CR[GCP Cloud Run]
+    CR[Render]
     ST[Strapi]
     SQ[("Supabase<br/>PostgreSQL")]
 
@@ -457,24 +457,23 @@ Astro localhost
 
 ---
 
-## Google Cloud Platform
+## Render
 
 | Concern | Setup |
 |---|---|
-| **Production backend** | Strapi → Docker → Google Cloud Run |
+| **Production backend** | Strapi → Docker → Render |
 | **Production database** | Supabase PostgreSQL (session pooler, TLS) |
-| **Connectivity** | Cloud Run → Supabase over TLS |
+| **Connectivity** | Render → Supabase over TLS |
 
 **Requirements**
 
-- Do not hardcode GCP credentials.
-- Do not expose PostgreSQL publicly unless required.
-- Use environment variables/secrets.
-- Configure production database connection securely.
-- Configure Cloud Run for Strapi.
-- Configure Strapi production environment properly.
+- Never hardcode credentials; every secret is an environment variable in the Render dashboard.
+- Set **Root Directory** to `backend` — the repo has no `package.json` at its root.
+- Leave `PORT` unset; Render injects it and `config/server.ts` reads it.
+- Keep the container stateless — database on Supabase, media on Cloudinary.
+- Account for the free tier sleeping: see the retry behaviour in `services/strapi/client.ts`.
 
-Keep the GCP architecture simple enough for a portfolio project.
+Keep the deployment simple enough for a portfolio project.
 
 ---
 
@@ -495,7 +494,7 @@ User
  -> Vercel
  -> Astro
  -> HTTPS REST API
- -> Strapi Cloud Run
+ -> Strapi di Render
  -> Supabase PostgreSQL
 ```
 
@@ -557,7 +556,7 @@ Use Git for version control.
 - `.env`
 - `node_modules`
 - database credentials
-- GCP credentials
+- deployment credentials
 - API secrets
 
 </td></tr>
@@ -576,7 +575,7 @@ Create a professional README containing:
 | 3 | Architecture | 11 | Docker setup |
 | 4 | Tech stack | 12 | Deployment architecture |
 | 5 | Features | 13 | Vercel deployment |
-| 6 | Screenshots | 14 | GCP Cloud Run deployment |
+| 6 | Screenshots | 14 | Render deployment |
 | 7 | Local installation | 15 | Database configuration |
 | 8 | Environment variables | | |
 
@@ -650,7 +649,7 @@ Before writing application code:
 - [x] Define the REST API integration strategy.
 - [x] Define PostgreSQL configuration.
 - [x] Explain Docker architecture.
-- [x] Explain GCP Cloud Run architecture.
+- [x] Explain Render architecture.
 - [x] Explain Vercel deployment architecture.
 
 > [!IMPORTANT]
@@ -729,7 +728,7 @@ Create:
 Test Strapi + PostgreSQL locally.
 
 > [!NOTE]
-> The image is built by Cloud Build during deployment rather than on a developer machine, so the Dockerfile is first exercised in Phase 8. `docker-compose.yml` carries no Postgres service — the project uses one managed Supabase database for both environments.
+> The image is built by Render during deployment rather than on a developer machine, so the Dockerfile is first exercised in Phase 8. `docker-compose.yml` carries no Postgres service — the project uses one managed Supabase database for both environments.
 
 ### Phase 8 — Deployment
 
@@ -738,7 +737,7 @@ Deploy:
 | Component | Target |
 |---|---|
 | Astro | Vercel |
-| Strapi | Docker → GCP Cloud Run |
+| Strapi | Docker → Render |
 | PostgreSQL | Supabase (already live) |
 
 ### Phase 9 — Production Review
@@ -770,7 +769,7 @@ After the application is complete, generate a concise technical project descript
 - [ ] PostgreSQL usage
 - [ ] Islands (React, Vue, Svelte)
 - [ ] Docker
-- [ ] GCP deployment
+- [ ] Render deployment
 - [ ] Challenges faced
 - [ ] Solutions implemented
 

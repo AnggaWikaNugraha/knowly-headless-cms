@@ -21,7 +21,7 @@ Architecture proposal for the [Fullstack Headless CMS](../README.md). This is th
 - [7. REST API integration strategy](#7-rest-api-integration-strategy)
 - [8. PostgreSQL configuration](#8-postgresql-configuration)
 - [9. Docker architecture](#9-docker-architecture)
-- [10. GCP Cloud Run](#10-gcp-cloud-run)
+- [10. Render](#10-render)
 - [11. Vercel deployment](#11-vercel-deployment)
 - [Environment variables](#environment-variables)
 - [Blockers before Phase 2](#blockers-before-phase-2)
@@ -35,13 +35,13 @@ Seven points where I had to choose, or where the root README does not yet cover 
 | # | Decision | Proposal | Why it needs a call |
 |---|---|---|---|
 | D1 | **Rendering mode** | Prerender content pages at build; server-render only `/search` | Trades publish-to-live latency (~1–3 min rebuild) for near-zero hosting cost and best TTFB |
-| D2 | **Media storage** | Cloudinary upload provider, not Strapi's local disk | **Cloud Run's filesystem is ephemeral — local uploads are destroyed on every restart.** Not optional if images must survive |
+| D2 | **Media storage** | Cloudinary upload provider, not Strapi's local disk | **Render's filesystem is ephemeral — local uploads are destroyed on every restart.** Not optional if images must survive |
 | D3 | **Strapi read access** | Public read permissions (`find`/`findOne` only), granted in `bootstrap()`; no API token | Simpler — no secret to manage — but leaves the content API readable by anyone who finds the URL. All writes stay closed |
 | D4 | **Search data path** | Island → Astro `/api/search` → service layer → Strapi | Keeps the Strapi URL and token server-side; avoids opening CORS to the browser |
 | D5 | **Docker base image** | `node:22-slim` (Debian), not Alpine | Strapi's `sharp` dependency is painful to build on Alpine; costs ~40 MB more image |
-| D6 | **Cloud Run region** | `asia-southeast2` (Jakarta) | Lowest latency for an Indonesian audience; `asia-southeast1` (Singapore) is the alternative |
+| D6 | **Hosting region** | Singapore | The closest Render region to an Indonesian audience; Render has no Jakarta region |
 | D7 | **Node version** | Pin Node 22 LTS via `.nvmrc` | This machine runs Node 24, which is outside Strapi 5's supported matrix — see [Blockers](#blockers-before-phase-2) |
-| D9 | **Production database** | Supabase Postgres for both development and production; no Cloud SQL | One managed database instead of two. Removes the Cloud SQL instance, the VPC connector and a data migration — the content already lives in Supabase. Cost: the database sits outside GCP, so it is one more provider in the stack |
+| D9 | **Production database** | Supabase Postgres for both development and production; no Cloud SQL | One managed database instead of two. Removes the Cloud SQL instance, the VPC connector and a data migration — the content already lives in Supabase. Cost: it is one more provider in the stack alongside Render and Cloudinary |
 | D8 | **Portfolio integration** | Served as `/blogs` on the existing Next.js portfolio via a rewrite; theme matched to it | Keeps this app standalone, so the islands and service layer still stand as portfolio work. The alternative — the portfolio fetching Strapi directly — would discard this entire frontend |
 
 D2 is the one I would flag hardest: it is a correctness problem, not a preference. Everything else is a trade-off you could reasonably decide differently.
@@ -68,7 +68,7 @@ Content pages are rendered once, when the site builds:
 flowchart LR
     E["Editor<br/>publishes in Strapi"] -->|webhook| VH["Vercel<br/>Deploy Hook"]
     VH --> B["Astro build"]
-    B -->|"REST, public read"| S["Strapi<br/>Cloud Run"]
+    B -->|"REST, public read"| S["Strapi<br/>Render"]
     S --> DB[("Supabase<br/>PostgreSQL")]
     B --> ST["Static HTML<br/>on Vercel CDN"]
 ```
@@ -85,11 +85,11 @@ flowchart LR
     CDN -->|"/search"| F["Astro server route"]
     F --> API["/api/search"]
     API --> SL["services/strapi"]
-    SL -->|"REST"| S["Strapi<br/>Cloud Run"]
+    SL -->|"REST"| S["Strapi<br/>Render"]
     S --> DB[("Supabase")]
 ```
 
-The consequence worth noticing: because content pages are prerendered, **Cloud Run receives traffic only at build time and on search**. It can scale to zero, which is why this stays essentially free to host.
+The consequence worth noticing: because content pages are prerendered, **Render receives traffic only at build time and on search**. It can scale to zero, which is why this stays essentially free to host.
 
 A second consequence only became obvious once Strapi actually went down mid-development: **a backend outage is invisible to visitors in production**. Content pages are static files, so they keep serving normally. An outage can only fail a build — which is the safe moment for it to fail — or degrade `/search`, which returns a friendly `503` rather than an error page. Verified against a real outage, not simulated.
 
@@ -100,7 +100,7 @@ The browser never holds a Strapi URL. It lives in Vercel's server-side environme
 Strapi's public role grants exactly `find` and `findOne` on the four content types and nothing else — every write action returns 403. Those grants live in `src/index.ts` (`bootstrap()`) rather than being clicked in the admin panel, because Strapi stores permissions in the **database**, not in files: a database that has never run this code would otherwise start with no permissions, and every request would fail with 403 in production only.
 
 > [!NOTE]
-> Public read is a deliberate trade-off. It is not a data leak — the same content appears on the public site — but it does leave the content API reachable by anyone who finds the URL, open to scraping, and able to wake Cloud Run with traffic. The upgrade path is a read-only API token: remove the `bootstrap()` grant and add `STRAPI_API_TOKEN` to the frontend environment.
+> Public read is a deliberate trade-off. It is not a data leak — the same content appears on the public site — but it does leave the content API reachable by anyone who finds the URL, open to scraping, and able to wake the backend with traffic. The upgrade path is a read-only API token: remove the `bootstrap()` grant and add `STRAPI_API_TOKEN` to the frontend environment.
 
 This satisfies the root README's rule — Astro never touches PostgreSQL, and every read follows `Astro → REST → Strapi → PostgreSQL`.
 
@@ -190,7 +190,7 @@ No data-fetching library, no state manager, no UI kit — per the root README an
 | `pg` | PostgreSQL driver |
 | `@strapi/database` | Query engine used by Strapi core |
 | `react`, `react-dom`, `react-router-dom`, `styled-components` | Strapi's own admin panel — not our choice, and never shipped to the public site |
-| `@strapi/plugin-cloud` | Scaffolded by `create-strapi-app`, unused here — this project deploys to Cloud Run, not Strapi Cloud |
+| `@strapi/plugin-cloud` | Scaffolded by `create-strapi-app`, unused here — this project deploys to Render, not Strapi Cloud |
 
 > [!NOTE]
 > Exact package names and major versions are confirmed against the installed Astro, Tailwind and Strapi releases during Phase 2. Tailwind in particular changed how it integrates with Astro between v3 and v4, and the Strapi upload-provider package name depends on the Strapi major version.
@@ -355,7 +355,7 @@ That keeps `STRAPI_API_URL` on the server, needs no CORS entry for the browser, 
 
 ## 8. PostgreSQL configuration
 
-**One managed database serves both environments: Supabase Postgres.** Development connects to it from the laptop; production connects to it from Cloud Run. See [D9](#0-decisions-that-need-your-approval).
+**One managed database serves both environments: Supabase Postgres.** Development connects to it from the laptop; production connects to it from Render. See [D9](#0-decisions-that-need-your-approval).
 
 Connections go through Supabase's **session pooler**, not the direct connection and not the transaction pooler:
 
@@ -404,40 +404,36 @@ Multi-stage earns its place here: building the admin panel needs the full dev to
 >
 > `types/` must **not** be excluded, even though it looks like generated output. `tsconfig.json` includes `./**/*.ts`, so `types/generated/*.d.ts` is inside the compilation scope; dropping it from the build context would leave `tsc` without those types.
 
-**The final image never contains a secret.** Everything sensitive is injected as an environment variable at run time, from Secret Manager.
+**The final image never contains a secret.** Everything sensitive is injected as an environment variable at run time, from the Render dashboard.
 
 `docker-compose.yml` at the repo root builds and runs that same image locally against the same Supabase database. It has **no Postgres service**: the project uses one managed database for both environments ([D9](#0-decisions-that-need-your-approval)), so a local Postgres would only be a third database whose contents match neither.
 
 ---
 
-## 10. GCP Cloud Run
+## 10. Render
 
-| Component | Configuration |
+| Item | Configuration |
 |---|---|
-| Artifact Registry | Docker repository holding the Strapi image |
-| Cloud Run | Service `strapi-cms`, region `asia-southeast2`, port 1337, min instances **0**, max 2 |
-| Secret Manager | `APP_KEYS`, `API_TOKEN_SALT`, `ADMIN_JWT_SECRET`, `TRANSFER_TOKEN_SALT`, `JWT_SECRET`, `ENCRYPTION_KEY`, `DATABASE_PASSWORD`, `CLOUDINARY_SECRET` |
-| Service account | `roles/secretmanager.secretAccessor`, nothing more |
+| Service | Web Service `strapi-cms`, Docker runtime |
+| Root directory | `backend` — the repo has no `package.json` at its root |
+| Region | Singapore, the closest Render offers to an Indonesian audience |
+| Instance | Free tier: 512 MB RAM, 0.1 CPU |
+| Port | Injected by Render as `PORT`; `config/server.ts` reads it via `env.int('PORT', 1337)` |
+| Health check | `/_health` |
+| Secrets | Environment variables set in the Render dashboard, never in the image |
 
-The database lives outside GCP ([D9](#0-decisions-that-need-your-approval)), and media lives on Cloudinary ([D2](#0-decisions-that-need-your-approval)). What remains inside GCP is a single stateless container plus its secrets — no Cloud SQL instance, no VPC connector, no database service account.
+Render builds `backend/Dockerfile` on every push to the default branch. No Docker daemon is needed on a developer machine, and there is no image registry to manage or clean up.
 
-The image is built by Cloud Build from the `Dockerfile`, so no Docker daemon is needed on a developer machine:
+The container is **completely stateless**: the database is Supabase ([D9](#0-decisions-that-need-your-approval)) and media is Cloudinary ([D2](#0-decisions-that-need-your-approval)). Nothing is written to its filesystem that has to survive a restart, which is what makes a free tier with an ephemeral disk viable at all.
 
-```bash
-gcloud run deploy strapi-cms --source backend --region asia-southeast2
-```
-
-**Min instances 0** is affordable precisely because of [D1](#0-decisions-that-need-your-approval): content pages are prerendered, so Strapi is idle between builds. The cost is a cold start of a few seconds on the first search after a quiet period — acceptable for a portfolio, and worth stating rather than hiding.
-
-> [!WARNING]
-> **Cloud Run's filesystem is ephemeral.** Strapi's default upload provider writes to `public/uploads` on local disk, and that disk is discarded whenever the container restarts, redeploys, or scales. Every uploaded image would silently disappear.
+> [!IMPORTANT]
+> **The free tier sleeps after inactivity.** The first request after a quiet period has to wake the container, and on 0.1 CPU that takes far longer than a warm one.
 >
-> The fix is Cloudinary: it stores and serves the media, and Strapi keeps only the URL. This is [D2](#0-decisions-that-need-your-approval), and it must be settled before Phase 3 — content created without it will lose its images.
+> This is why `services/strapi/client.ts` retries with an escalating window — 15s, then 30s, then 60s — instead of a single short timeout. With one 10-second attempt, every Vercel build would fail on its first fetch.
 >
-> Cloudinary is Strapi's **officially maintained** provider, so it tracks Strapi releases rather than lagging behind them, and it brings a CDN and on-the-fly image transforms with it — `f_auto` and `q_auto` alone remove most of the image-optimisation work a content site would otherwise have to do by hand. It also keeps media entirely outside GCP, which leaves this project's GCP footprint at Cloud Run, Artifact Registry and Secret Manager, and nothing else. Its free tier is comfortably enough for a portfolio project.
+> `searchArticles()` deliberately opts out of that retry (`retries: 0`, 8-second timeout). Build-time waiting is invisible; a visitor typing in the search box should get a friendly message quickly rather than a minute of silence.
 
-> [!NOTE]
-> Strapi's security middleware ships a Content Security Policy that only permits images from its own origin. With Cloudinary, `res.cloudinary.com` has to be added to `img-src` and `media-src` in `config/middlewares.ts` — otherwise the admin panel shows broken thumbnails while the API returns perfectly valid URLs, which reads like an upload bug and is not one.
+A sleeping backend costs visitors nothing, because content pages are prerendered ([D1](#0-decisions-that-need-your-approval)). Only builds, `/search` and the admin panel ever reach it.
 
 ---
 
@@ -452,7 +448,7 @@ gcloud run deploy strapi-cms --source backend --region asia-southeast2
 
 `STRAPI_API_URL` has no `PUBLIC_` prefix, so Astro keeps it server-side; only `PUBLIC_SITE_URL` reaches the browser, and it is not a secret — canonical URLs and Open Graph tags need it.
 
-**Publish → live.** A Strapi webhook on entry publish and unpublish calls a Vercel Deploy Hook, which rebuilds and redeploys the static pages. Editors see changes after a build, not instantly. That is the trade-off in [D1](#0-decisions-that-need-your-approval), and the alternative — full server rendering — costs a Cloud Run round trip on every page view instead.
+**Publish → live.** A Strapi webhook on entry publish and unpublish calls a Vercel Deploy Hook, which rebuilds and redeploys the static pages. Editors see changes after a build, not instantly. That is the trade-off in [D1](#0-decisions-that-need-your-approval), and the alternative — full server rendering — costs a Render round trip on every page view instead.
 
 Pull requests get preview deployments automatically, pointed at the same Strapi instance.
 
@@ -482,7 +478,13 @@ The theme is matched to the portfolio, which is why this site is **dark-only** a
 ```bash
 STRAPI_API_URL=
 PUBLIC_SITE_URL=
+
+# Backend sleeps on the free tier; the first request has to wake it.
+STRAPI_TIMEOUT_MS=15000     # first attempt; retries double it
+STRAPI_RETRIES=2
 ```
+
+`STRAPI_TIMEOUT_MS` and `STRAPI_RETRIES` matter most in Vercel's build environment, where a cold backend would otherwise fail the build on its first fetch. Raising the timeout is safe there — nobody is waiting on a build. `searchArticles()` ignores both and fails fast instead.
 
 **`backend/.env.example`**
 

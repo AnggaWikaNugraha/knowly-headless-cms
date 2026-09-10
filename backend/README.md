@@ -3,7 +3,7 @@
 [![Strapi](https://img.shields.io/badge/Strapi-4945FF?style=flat&logo=strapi&logoColor=white)](https://strapi.io)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com)
-[![Google Cloud](https://img.shields.io/badge/Google_Cloud-4285F4?style=flat&logo=googlecloud&logoColor=white)](https://cloud.google.com)
+[![Render](https://img.shields.io/badge/Render-46E3B7?style=flat&logo=render&logoColor=white)](https://render.com)
 
 **English** · [Bahasa Indonesia](README.id.md)
 
@@ -101,7 +101,7 @@ Configure appropriate Strapi roles and permissions.
 Configure Strapi CORS so that production API access is limited appropriately.
 
 ```text
-Production frontend:  Vercel  ->  Strapi Cloud Run
+Production frontend:  Vercel  ->  Strapi di Render
 ```
 
 **Follow basic security practices**
@@ -133,7 +133,7 @@ Those grants are applied in [`src/index.ts`](src/index.ts) inside `bootstrap()`,
 The reason is that Strapi stores permissions in the **database**, not in files. A permission ticked on a local database never travels with the code — a database that has never run this code would start with none, and every request would fail with `403` in production only, long after the change looked correct locally. Granting them in code keeps the setting version-controlled, reviewable, and identical on every environment.
 
 > [!NOTE]
-> Open read means the content API is reachable by anyone who finds its URL. That is not a data leak — the same content is published on the public site — but it does allow scraping, and traffic can wake Cloud Run. To close it, remove the `bootstrap()` grant and give Astro a read-only API token instead. See D3 in [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md).
+> Open read means the content API is reachable by anyone who finds its URL. That is not a data leak — the same content is published on the public site — but it does allow scraping, and traffic can wake the backend. To close it, remove the `bootstrap()` grant and give Astro a read-only API token instead. See D3 in [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md).
 
 ---
 

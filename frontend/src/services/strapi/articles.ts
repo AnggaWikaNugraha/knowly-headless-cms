@@ -106,24 +106,37 @@ export async function getRelatedArticles(article: Article, limit = 3): Promise<A
   return items;
 }
 
-/** Pencarian di judul, ringkasan, dan isi. Dipakai lewat /api/search, bukan langsung dari browser. */
+/**
+ * Pencarian di judul, ringkasan, dan isi. Dipakai lewat /api/search, bukan
+ * langsung dari browser.
+ *
+ * Sengaja tanpa retry dan dengan timeout pendek. Fungsi lain dipanggil saat
+ * build, di mana menunggu backend bangun itu wajar. Yang ini dipanggil saat
+ * pengunjung mengetik — membiarkannya mengulang sampai semenit berarti kotak
+ * pencarian menggantung tanpa kabar. Lebih baik cepat menyerah lalu
+ * menampilkan pesan yang ramah.
+ */
 export function searchArticles(
   q: string,
   page = 1,
   pageSize = site.pageSize,
 ): Promise<Paginated<Article>> {
-  return fetchCollection<Article>(PATH, {
-    filters: {
-      $or: [
-        { title: { $containsi: q } },
-        { excerpt: { $containsi: q } },
-        { content: { $containsi: q } },
-      ],
+  return fetchCollection<Article>(
+    PATH,
+    {
+      filters: {
+        $or: [
+          { title: { $containsi: q } },
+          { excerpt: { $containsi: q } },
+          { content: { $containsi: q } },
+        ],
+      },
+      populate: CARD_POPULATE,
+      sort: SORT_NEWEST,
+      pagination: { page, pageSize },
     },
-    populate: CARD_POPULATE,
-    sort: SORT_NEWEST,
-    pagination: { page, pageSize },
-  });
+    { retries: 0, timeoutMs: 8_000 },
+  );
 }
 
 /** Semua slug artikel — dipakai getStaticPaths untuk prerender tiap halaman detail. */

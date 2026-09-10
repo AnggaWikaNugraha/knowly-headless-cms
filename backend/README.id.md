@@ -3,7 +3,7 @@
 [![Strapi](https://img.shields.io/badge/Strapi-4945FF?style=flat&logo=strapi&logoColor=white)](https://strapi.io)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com)
-[![Google Cloud](https://img.shields.io/badge/Google_Cloud-4285F4?style=flat&logo=googlecloud&logoColor=white)](https://cloud.google.com)
+[![Render](https://img.shields.io/badge/Render-46E3B7?style=flat&logo=render&logoColor=white)](https://render.com)
 
 [English](README.md) · **Bahasa Indonesia**
 
@@ -101,7 +101,7 @@ Konfigurasikan role dan permission Strapi dengan tepat.
 Konfigurasikan CORS Strapi agar akses API produksi dibatasi dengan tepat.
 
 ```text
-Frontend produksi:  Vercel  ->  Strapi Cloud Run
+Frontend produksi:  Vercel  ->  Strapi di Render
 ```
 
 **Ikuti praktik keamanan dasar**
@@ -133,7 +133,7 @@ Pemberian izin itu dilakukan di [`src/index.ts`](src/index.ts) dalam `bootstrap(
 Alasannya, Strapi menyimpan permission di **database**, bukan di file. Izin yang dicentang di database lokal tidak ikut berpindah bersama kode — database yang belum pernah menjalankan kode ini akan start tanpa permission sama sekali, dan setiap request gagal `403` hanya di produksi, lama setelah perubahannya tampak benar di lokal. Menuliskannya sebagai kode membuat setelan ini masuk version control, bisa direview, dan sama persis di semua environment.
 
 > [!NOTE]
-> Baca terbuka berarti content API bisa dijangkau siapa pun yang menemukan URL-nya. Ini bukan kebocoran data — konten yang sama toh terbit di situs publik — tapi memungkinkan scraping, dan trafiknya bisa membangunkan Cloud Run. Untuk menutupnya, cabut pemberian izin di `bootstrap()` lalu berikan API token read-only ke Astro. Lihat D3 di [`docs/ARCHITECTURE.id.md`](../docs/ARCHITECTURE.id.md).
+> Baca terbuka berarti content API bisa dijangkau siapa pun yang menemukan URL-nya. Ini bukan kebocoran data — konten yang sama toh terbit di situs publik — tapi memungkinkan scraping, dan trafiknya bisa membangunkan backend. Untuk menutupnya, cabut pemberian izin di `bootstrap()` lalu berikan API token read-only ke Astro. Lihat D3 di [`docs/ARCHITECTURE.id.md`](../docs/ARCHITECTURE.id.md).
 
 ---
 

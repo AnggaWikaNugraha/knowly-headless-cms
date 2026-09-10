@@ -21,7 +21,7 @@ Usulan arsitektur untuk [Fullstack Headless CMS](../README.id.md). Ini adalah ke
 - [7. Strategi integrasi REST API](#7-strategi-integrasi-rest-api)
 - [8. Konfigurasi PostgreSQL](#8-konfigurasi-postgresql)
 - [9. Arsitektur Docker](#9-arsitektur-docker)
-- [10. GCP Cloud Run](#10-gcp-cloud-run)
+- [10. Render](#10-render)
 - [11. Deployment Vercel](#11-deployment-vercel)
 - [Environment variable](#environment-variable)
 - [Penghalang sebelum Fase 2](#penghalang-sebelum-fase-2)
@@ -35,13 +35,13 @@ Tujuh titik di mana saya harus memilih, atau di mana README root belum mengatur 
 | # | Keputusan | Usulan | Kenapa perlu diputuskan |
 |---|---|---|---|
 | D1 | **Mode rendering** | Halaman konten di-prerender saat build; hanya `/search` yang server-rendered | Menukar jeda terbit-ke-tayang (~1–3 menit rebuild) dengan biaya hosting nyaris nol dan TTFB terbaik |
-| D2 | **Penyimpanan media** | Upload provider Cloudinary, bukan disk lokal Strapi | **Filesystem Cloud Run bersifat ephemeral — upload lokal hilang setiap kali restart.** Bukan opsional kalau gambar harus bertahan |
+| D2 | **Penyimpanan media** | Upload provider Cloudinary, bukan disk lokal Strapi | **Filesystem Render bersifat ephemeral — upload lokal hilang setiap kali restart.** Bukan opsional kalau gambar harus bertahan |
 | D3 | **Akses baca Strapi** | Permission publik (`find`/`findOne` saja), dinyalakan di `bootstrap()`; tanpa API token | Lebih sederhana — tidak ada secret yang perlu dikelola — tapi content API bisa dibaca siapa pun yang menemukan URL-nya. Semua penulisan tetap tertutup |
 | D4 | **Jalur data search** | Island → Astro `/api/search` → service layer → Strapi | Menjaga URL dan token Strapi tetap di server; tidak perlu membuka CORS ke browser |
 | D5 | **Base image Docker** | `node:22-slim` (Debian), bukan Alpine | Dependensi `sharp` milik Strapi merepotkan dibangun di Alpine; biayanya image ~40 MB lebih besar |
-| D6 | **Region Cloud Run** | `asia-southeast2` (Jakarta) | Latensi terendah untuk audiens Indonesia; alternatifnya `asia-southeast1` (Singapura) |
+| D6 | **Region hosting** | Singapura | Region Render terdekat untuk audiens Indonesia; Render tidak punya region Jakarta |
 | D7 | **Versi Node** | Kunci Node 22 LTS lewat `.nvmrc` | Mesin ini memakai Node 24, di luar matriks dukungan Strapi 5 — lihat [Penghalang](#penghalang-sebelum-fase-2) |
-| D9 | **Database produksi** | Supabase Postgres untuk development sekaligus produksi; tanpa Cloud SQL | Satu database terkelola, bukan dua. Menghapus instance Cloud SQL, VPC connector, dan proses migrasi data — kontennya sudah ada di Supabase. Konsekuensinya database berada di luar GCP, jadi ada satu penyedia tambahan di stack |
+| D9 | **Database produksi** | Supabase Postgres untuk development sekaligus produksi; tanpa Cloud SQL | Satu database terkelola, bukan dua. Menghapus instance Cloud SQL, VPC connector, dan proses migrasi data — kontennya sudah ada di Supabase. Konsekuensinya ada satu penyedia tambahan di stack, berdampingan dengan Render dan Cloudinary |
 | D8 | **Integrasi portofolio** | Disajikan sebagai `/blogs` di portofolio Next.js yang sudah ada lewat rewrite; tema disamakan | Menjaga aplikasi ini tetap berdiri sendiri, sehingga island dan service layer tetap terhitung sebagai karya portofolio. Alternatifnya — portofolio langsung fetch ke Strapi — akan membuang seluruh frontend ini |
 
 D2 yang paling saya tekankan: itu masalah kebenaran, bukan preferensi. Sisanya trade-off yang wajar saja kalau kamu putuskan berbeda.
@@ -68,7 +68,7 @@ Halaman konten dirender sekali, saat situs dibangun:
 flowchart LR
     E["Editor<br/>menerbitkan di Strapi"] -->|webhook| VH["Vercel<br/>Deploy Hook"]
     VH --> B["Astro build"]
-    B -->|"REST, baca publik"| S["Strapi<br/>Cloud Run"]
+    B -->|"REST, baca publik"| S["Strapi<br/>Render"]
     S --> DB[("Supabase<br/>PostgreSQL")]
     B --> ST["HTML statis<br/>di Vercel CDN"]
 ```
@@ -85,11 +85,11 @@ flowchart LR
     CDN -->|"/search"| F["Astro server route"]
     F --> API["/api/search"]
     API --> SL["services/strapi"]
-    SL -->|"REST"| S["Strapi<br/>Cloud Run"]
+    SL -->|"REST"| S["Strapi<br/>Render"]
     S --> DB[("Supabase")]
 ```
 
-Konsekuensi yang perlu disadari: karena halaman konten sudah di-prerender, **Cloud Run hanya menerima trafik saat build dan saat search**. Dia bisa turun ke nol instance, dan itulah sebabnya hosting ini praktis gratis.
+Konsekuensi yang perlu disadari: karena halaman konten sudah di-prerender, **Render hanya menerima trafik saat build dan saat search**. Dia bisa turun ke nol instance, dan itulah sebabnya hosting ini praktis gratis.
 
 Konsekuensi kedua baru terlihat jelas ketika Strapi benar-benar mati di tengah pengembangan: **pemadaman backend tidak terlihat oleh pengunjung di produksi**. Halaman konten berupa file statis, jadi tetap tersaji normal. Pemadaman hanya bisa menggagalkan build — dan itu justru saat yang aman untuk gagal — atau menurunkan `/search`, yang mengembalikan `503` ramah alih-alih halaman error. Diverifikasi terhadap pemadaman nyata, bukan simulasi.
 
@@ -100,7 +100,7 @@ Browser tidak pernah memegang URL Strapi. URL itu hidup di environment sisi serv
 Role publik Strapi diberi tepat `find` dan `findOne` pada keempat content type, tidak lebih — setiap aksi penulisan mengembalikan 403. Pemberian izin itu ditulis di `src/index.ts` (`bootstrap()`), bukan diklik di admin panel, karena Strapi menyimpan permission di **database**, bukan di file: database yang belum pernah menjalankan kode ini akan start tanpa permission sama sekali, dan setiap request gagal 403 hanya di produksi.
 
 > [!NOTE]
-> Baca publik adalah trade-off yang disengaja. Ini bukan kebocoran data — konten yang sama toh tampil di situs publik — tapi content API jadi bisa dijangkau siapa pun yang menemukan URL-nya, terbuka untuk di-scrape, dan bisa membangunkan Cloud Run dengan trafik. Jalur peningkatannya adalah API token read-only: cabut pemberian izin di `bootstrap()`, lalu tambahkan `STRAPI_API_TOKEN` ke environment frontend.
+> Baca publik adalah trade-off yang disengaja. Ini bukan kebocoran data — konten yang sama toh tampil di situs publik — tapi content API jadi bisa dijangkau siapa pun yang menemukan URL-nya, terbuka untuk di-scrape, dan bisa membangunkan backend dengan trafik. Jalur peningkatannya adalah API token read-only: cabut pemberian izin di `bootstrap()`, lalu tambahkan `STRAPI_API_TOKEN` ke environment frontend.
 
 Ini memenuhi aturan README root — Astro tidak pernah menyentuh PostgreSQL, dan setiap pembacaan mengikuti `Astro → REST → Strapi → PostgreSQL`.
 
@@ -190,7 +190,7 @@ Tanpa library data-fetching, tanpa state manager, tanpa UI kit — sesuai README
 | `pg` | Driver PostgreSQL |
 | `@strapi/database` | Query engine yang dipakai inti Strapi |
 | `react`, `react-dom`, `react-router-dom`, `styled-components` | Admin panel bawaan Strapi — bukan pilihan kita, dan tidak pernah dikirim ke situs publik |
-| `@strapi/plugin-cloud` | Bawaan `create-strapi-app`, tidak dipakai di sini — proyek ini deploy ke Cloud Run, bukan Strapi Cloud |
+| `@strapi/plugin-cloud` | Bawaan `create-strapi-app`, tidak dipakai di sini — proyek ini deploy ke Render, bukan Strapi Cloud |
 
 > [!NOTE]
 > Nama paket dan versi mayor yang persis dikonfirmasi terhadap rilis Astro, Tailwind, dan Strapi yang benar-benar terpasang saat Fase 2. Tailwind khususnya mengubah cara integrasinya dengan Astro antara v3 dan v4, dan nama paket upload provider Strapi bergantung pada versi mayor Strapi.
@@ -355,7 +355,7 @@ Dengan begitu `STRAPI_API_URL` tetap di server, tidak perlu entri CORS untuk bro
 
 ## 8. Konfigurasi PostgreSQL
 
-**Satu database terkelola melayani kedua environment: Supabase Postgres.** Development terhubung dari laptop; produksi terhubung dari Cloud Run. Lihat [D9](#0-keputusan-yang-butuh-persetujuanmu).
+**Satu database terkelola melayani kedua environment: Supabase Postgres.** Development terhubung dari laptop; produksi terhubung dari Render. Lihat [D9](#0-keputusan-yang-butuh-persetujuanmu).
 
 Koneksi lewat **session pooler** Supabase — bukan direct connection, bukan transaction pooler:
 
@@ -404,40 +404,36 @@ Multi-stage memang layak di sini: membangun admin panel butuh toolchain dev leng
 >
 > `types/` justru **tidak boleh** dikecualikan, meski terlihat seperti hasil generate. `tsconfig.json` mencakup `./**/*.ts`, jadi `types/generated/*.d.ts` ada dalam cakupan kompilasi; membuangnya dari build context akan membuat `tsc` kehilangan tipe-tipe itu.
 
-**Image akhir tidak pernah memuat secret.** Semua yang sensitif disuntikkan sebagai environment variable saat runtime, dari Secret Manager.
+**Image akhir tidak pernah memuat secret.** Semua yang sensitif disuntikkan sebagai environment variable saat runtime, dari dashboard Render.
 
 `docker-compose.yml` di root repo membangun dan menjalankan image yang sama secara lokal, terhubung ke database Supabase yang sama. Dia **tanpa service Postgres**: proyek ini memakai satu database terkelola untuk kedua environment ([D9](#0-keputusan-yang-butuh-persetujuanmu)), jadi Postgres lokal hanya akan jadi database ketiga yang isinya tidak cocok dengan keduanya.
 
 ---
 
-## 10. GCP Cloud Run
+## 10. Render
 
-| Komponen | Konfigurasi |
+| Hal | Konfigurasi |
 |---|---|
-| Artifact Registry | Repository Docker yang menyimpan image Strapi |
-| Cloud Run | Service `strapi-cms`, region `asia-southeast2`, port 1337, min instance **0**, maks 2 |
-| Secret Manager | `APP_KEYS`, `API_TOKEN_SALT`, `ADMIN_JWT_SECRET`, `TRANSFER_TOKEN_SALT`, `JWT_SECRET`, `ENCRYPTION_KEY`, `DATABASE_PASSWORD`, `CLOUDINARY_SECRET` |
-| Service account | `roles/secretmanager.secretAccessor`, tidak lebih |
+| Service | Web Service `strapi-cms`, runtime Docker |
+| Root directory | `backend` — repo ini tidak punya `package.json` di root |
+| Region | Singapura, region Render terdekat untuk audiens Indonesia |
+| Instance | Free tier: 512 MB RAM, 0.1 CPU |
+| Port | Disuntikkan Render lewat `PORT`; `config/server.ts` membacanya via `env.int('PORT', 1337)` |
+| Health check | `/_health` |
+| Secret | Environment variable di dashboard Render, tidak pernah di dalam image |
 
-Database berada di luar GCP ([D9](#0-keputusan-yang-butuh-persetujuanmu)), dan media di Cloudinary ([D2](#0-keputusan-yang-butuh-persetujuanmu)). Yang tersisa di dalam GCP hanyalah satu kontainer stateless beserta secret-nya — tanpa instance Cloud SQL, tanpa VPC connector, tanpa service account database.
+Render membangun `backend/Dockerfile` setiap kali ada push ke branch utama. Tidak perlu Docker daemon di mesin developer, dan tidak ada image registry yang harus dikelola atau dibersihkan.
 
-Image-nya dibangun Cloud Build dari `Dockerfile`, jadi tidak perlu ada Docker daemon di mesin developer:
+Kontainernya **sepenuhnya stateless**: database di Supabase ([D9](#0-keputusan-yang-butuh-persetujuanmu)) dan media di Cloudinary ([D2](#0-keputusan-yang-butuh-persetujuanmu)). Tidak ada yang ditulis ke filesystem-nya yang perlu bertahan setelah restart — dan justru itu yang membuat free tier berdisk ephemeral bisa dipakai sama sekali.
 
-```bash
-gcloud run deploy strapi-cms --source backend --region asia-southeast2
-```
-
-**Min instance 0** terjangkau justru karena [D1](#0-keputusan-yang-butuh-persetujuanmu): halaman konten sudah di-prerender, jadi Strapi menganggur di antara build. Biayanya adalah cold start beberapa detik pada pencarian pertama setelah periode sepi — masih wajar untuk portofolio, dan lebih baik dinyatakan daripada disembunyikan.
-
-> [!WARNING]
-> **Filesystem Cloud Run bersifat ephemeral.** Upload provider bawaan Strapi menulis ke `public/uploads` di disk lokal, dan disk itu dibuang setiap kali kontainer restart, redeploy, atau menskala. Setiap gambar yang diunggah akan hilang diam-diam.
+> [!IMPORTANT]
+> **Free tier tidur saat menganggur.** Request pertama setelah jeda harus membangunkan kontainernya, dan di 0.1 CPU itu jauh lebih lama daripada request biasa.
 >
-> Perbaikannya adalah Cloudinary: dia yang menyimpan dan menyajikan medianya, dan Strapi hanya menyimpan URL-nya. Ini [D2](#0-keputusan-yang-butuh-persetujuanmu), dan harus diputuskan sebelum Fase 3 — konten yang dibuat tanpa itu akan kehilangan gambarnya.
+> Karena itu `services/strapi/client.ts` mengulang dengan jendela yang membesar — 15 detik, lalu 30, lalu 60 — bukan satu timeout pendek. Dengan sekali percobaan 10 detik, setiap build Vercel akan gagal di fetch pertamanya.
 >
-> Cloudinary adalah provider yang **dipelihara resmi** oleh Strapi, jadi dia mengikuti rilis Strapi alih-alih tertinggal di belakangnya, dan dia membawa CDN serta transformasi gambar on-the-fly — `f_auto` dan `q_auto` saja sudah menghapus sebagian besar pekerjaan optimasi gambar yang biasanya harus dilakukan manual di situs konten. Cloudinary juga menempatkan media sepenuhnya di luar GCP, sehingga jejak GCP proyek ini tinggal Cloud Run, Artifact Registry, dan Secret Manager saja. Free tier-nya lebih dari cukup untuk proyek portofolio.
+> `searchArticles()` sengaja tidak ikut mengulang (`retries: 0`, timeout 8 detik). Menunggu saat build tidak terlihat siapa pun; pengunjung yang mengetik di kotak pencarian layak dapat pesan cepat, bukan hening semenit.
 
-> [!NOTE]
-> Security middleware bawaan Strapi memasang Content Security Policy yang hanya mengizinkan gambar dari origin-nya sendiri. Dengan Cloudinary, `res.cloudinary.com` harus ditambahkan ke `img-src` dan `media-src` di `config/middlewares.ts` — kalau tidak, admin panel menampilkan thumbnail rusak padahal API mengembalikan URL yang benar, dan itu terbaca seperti bug upload padahal bukan.
+Backend yang tidur tidak merugikan pengunjung, karena halaman konten sudah di-prerender ([D1](#0-keputusan-yang-butuh-persetujuanmu)). Hanya build, `/search`, dan admin panel yang pernah menyentuhnya.
 
 ---
 
@@ -452,7 +448,7 @@ gcloud run deploy strapi-cms --source backend --region asia-southeast2
 
 `STRAPI_API_URL` tidak berprefiks `PUBLIC_`, jadi Astro menahannya di sisi server; hanya `PUBLIC_SITE_URL` yang sampai ke browser, dan itu bukan secret — canonical URL dan tag Open Graph memang membutuhkannya.
 
-**Terbit → tayang.** Webhook Strapi pada peristiwa publish dan unpublish memanggil Vercel Deploy Hook, yang membangun ulang dan men-deploy ulang halaman statisnya. Editor melihat perubahan setelah build, bukan seketika. Itulah trade-off pada [D1](#0-keputusan-yang-butuh-persetujuanmu), dan alternatifnya — server rendering penuh — justru menuntut satu putaran ke Cloud Run pada setiap kunjungan halaman.
+**Terbit → tayang.** Webhook Strapi pada peristiwa publish dan unpublish memanggil Vercel Deploy Hook, yang membangun ulang dan men-deploy ulang halaman statisnya. Editor melihat perubahan setelah build, bukan seketika. Itulah trade-off pada [D1](#0-keputusan-yang-butuh-persetujuanmu), dan alternatifnya — server rendering penuh — justru menuntut satu putaran ke Render pada setiap kunjungan halaman.
 
 Pull request otomatis mendapat preview deployment, mengarah ke instance Strapi yang sama.
 
@@ -482,7 +478,13 @@ Temanya disamakan dengan portofolio, dan itulah sebabnya situs ini **dark-only**
 ```bash
 STRAPI_API_URL=
 PUBLIC_SITE_URL=
+
+# Backend tidur di free tier; request pertama harus membangunkannya.
+STRAPI_TIMEOUT_MS=15000     # percobaan pertama; pengulangan menggandakannya
+STRAPI_RETRIES=2
 ```
+
+`STRAPI_TIMEOUT_MS` dan `STRAPI_RETRIES` paling berpengaruh di environment build Vercel, karena backend yang dingin akan menggagalkan build pada fetch pertamanya. Menaikkan timeout di sana aman — tidak ada yang menunggu proses build. `searchArticles()` mengabaikan keduanya dan justru gagal cepat.
 
 **`backend/.env.example`**
 

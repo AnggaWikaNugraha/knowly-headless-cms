@@ -9,14 +9,14 @@
 [![Strapi](https://img.shields.io/badge/Strapi-4945FF?style=flat&logo=strapi&logoColor=white)](https://strapi.io)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com)
-[![Google Cloud](https://img.shields.io/badge/Google_Cloud-4285F4?style=flat&logo=googlecloud&logoColor=white)](https://cloud.google.com)
+[![Render](https://img.shields.io/badge/Render-46E3B7?style=flat&logo=render&logoColor=white)](https://render.com)
 [![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat&logo=vercel&logoColor=white)](https://vercel.com)
 
 [English](README.md) · **Bahasa Indonesia**
 
 Membangun Headless CMS / Knowledge Management System yang siap produksi sebagai proyek portofolio.
 
-Proyek ini harus mendemonstrasikan Full-Stack Development dunia nyata menggunakan Astro, React, TypeScript, Strapi, REST API, PostgreSQL, Docker, dan Google Cloud Platform.
+Proyek ini harus mendemonstrasikan Full-Stack Development dunia nyata menggunakan Astro, React, TypeScript, Strapi, REST API, PostgreSQL, Docker, dan Render.
 
 > [!IMPORTANT]
 > **JANGAN** membuat seluruh aplikasi sekaligus.
@@ -41,7 +41,7 @@ Proyek ini harus mendemonstrasikan Full-Stack Development dunia nyata menggunaka
 - [Struktur Proyek](#struktur-proyek)
 - [Docker](#docker)
 - [Pengembangan Lokal](#pengembangan-lokal)
-- [Google Cloud Platform](#google-cloud-platform)
+- [Render](#render)
 - [Vercel](#vercel)
 - [Environment Variable](#environment-variable)
 - [Git & GitHub](#git--github)
@@ -84,7 +84,7 @@ Proyek ini harus mendemonstrasikan:
 | **Frontend** | Astro · React · Vue · Svelte · TypeScript · Tailwind CSS |
 | **Backend / CMS** | Strapi Headless CMS · REST API · TypeScript jika didukung |
 | **Database** | PostgreSQL |
-| **Infrastruktur** | Docker · Google Cloud Platform · Google Cloud Run |
+| **Infrastruktur** | Docker · Render · Render |
 | **Hosting database** | Supabase (PostgreSQL terkelola) — lihat D9 di [`docs/ARCHITECTURE.id.md`](docs/ARCHITECTURE.id.md) |
 | **Deployment Frontend** | Vercel |
 | **Version Control** | Git · GitHub |
@@ -115,7 +115,7 @@ flowchart TD
     V[Vercel]
     DK[Docker]
     AF[Astro Frontend]
-    CR[GCP Cloud Run]
+    CR[Render]
     ST[Strapi]
     SQ[("Supabase<br/>PostgreSQL")]
 
@@ -457,24 +457,23 @@ Astro localhost
 
 ---
 
-## Google Cloud Platform
+## Render
 
 | Aspek | Setup |
 |---|---|
-| **Backend produksi** | Strapi → Docker → Google Cloud Run |
+| **Backend produksi** | Strapi → Docker → Render |
 | **Database produksi** | Supabase PostgreSQL (session pooler, TLS) |
-| **Konektivitas** | Cloud Run → Supabase lewat TLS |
+| **Konektivitas** | Render → Supabase lewat TLS |
 
 **Kebutuhan**
 
-- Jangan menuliskan kredensial GCP secara hardcode.
-- Jangan mengekspos PostgreSQL ke publik kecuali diperlukan.
-- Gunakan environment variable/secret.
-- Konfigurasikan koneksi database produksi secara aman.
-- Konfigurasikan Cloud Run untuk Strapi.
-- Konfigurasikan environment produksi Strapi dengan benar.
+- Jangan pernah menuliskan kredensial secara hardcode; semua secret jadi environment variable di dashboard Render.
+- Set **Root Directory** ke `backend` — repo ini tidak punya `package.json` di root.
+- Biarkan `PORT` kosong; Render menyuntikkannya dan `config/server.ts` membacanya.
+- Jaga kontainer tetap stateless — database di Supabase, media di Cloudinary.
+- Perhitungkan free tier yang tidur: lihat perilaku pengulangan di `services/strapi/client.ts`.
 
-Jaga arsitektur GCP tetap sederhana, sesuai untuk proyek portofolio.
+Jaga deployment tetap sederhana, sesuai untuk proyek portofolio.
 
 ---
 
@@ -495,7 +494,7 @@ User
  -> Vercel
  -> Astro
  -> HTTPS REST API
- -> Strapi Cloud Run
+ -> Strapi di Render
  -> Supabase PostgreSQL
 ```
 
@@ -557,7 +556,7 @@ Gunakan Git untuk version control.
 - `.env`
 - `node_modules`
 - kredensial database
-- kredensial GCP
+- kredensial deployment
 - secret API
 
 </td></tr>
@@ -576,7 +575,7 @@ Buat README profesional yang memuat:
 | 3 | Arsitektur | 11 | Setup Docker |
 | 4 | Tech stack | 12 | Arsitektur deployment |
 | 5 | Fitur | 13 | Deployment Vercel |
-| 6 | Screenshot | 14 | Deployment GCP Cloud Run |
+| 6 | Screenshot | 14 | Deployment Render |
 | 7 | Instalasi lokal | 15 | Konfigurasi database |
 | 8 | Environment variable | | |
 
@@ -650,7 +649,7 @@ Sebelum menulis kode aplikasi:
 - [x] Definisikan strategi integrasi REST API.
 - [x] Definisikan konfigurasi PostgreSQL.
 - [x] Jelaskan arsitektur Docker.
-- [x] Jelaskan arsitektur GCP Cloud Run.
+- [x] Jelaskan arsitektur Render.
 - [x] Jelaskan arsitektur deployment Vercel.
 
 > [!IMPORTANT]
@@ -729,7 +728,7 @@ Buat:
 Uji Strapi + PostgreSQL secara lokal.
 
 > [!NOTE]
-> Image-nya dibangun Cloud Build saat deployment, bukan di mesin developer, jadi Dockerfile pertama kali benar-benar diuji di Fase 8. `docker-compose.yml` tidak memuat service Postgres — proyek ini memakai satu database Supabase terkelola untuk kedua environment.
+> Image-nya dibangun Render saat deployment, bukan di mesin developer, jadi Dockerfile pertama kali benar-benar diuji di Fase 8. `docker-compose.yml` tidak memuat service Postgres — proyek ini memakai satu database Supabase terkelola untuk kedua environment.
 
 ### Fase 8 — Deployment
 
@@ -738,7 +737,7 @@ Deploy:
 | Komponen | Target |
 |---|---|
 | Astro | Vercel |
-| Strapi | Docker → GCP Cloud Run |
+| Strapi | Docker → Render |
 | PostgreSQL | Supabase (sudah hidup) |
 
 ### Fase 9 — Review Produksi
@@ -770,7 +769,7 @@ Setelah aplikasi selesai, buat deskripsi teknis proyek yang ringkas untuk portof
 - [ ] Penggunaan PostgreSQL
 - [ ] Islands (React, Vue, Svelte)
 - [ ] Docker
-- [ ] Deployment GCP
+- [ ] Deployment Render
 - [ ] Tantangan yang dihadapi
 - [ ] Solusi yang diterapkan
 
