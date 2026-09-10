@@ -96,7 +96,7 @@ Three frameworks are a deliberate choice: they demonstrate that Astro's islands 
 Those figures are measured from the build output, not estimated. They are also the reason each framework sits where it does: the article page is the one visitors actually read, so it gets the lightest runtime available. React on that page would cost roughly four times as much.
 
 > [!CAUTION]
-> Watch for **global islands**. Anything in the shared header or footer — a mobile navigation toggle, for instance — appears on every page and would collide with all three frameworks at once. Build shared-layout interactivity as an `.astro` component with plain JavaScript instead.
+> Watch for **global islands**. Anything in the shared layout — the floating navigation rail or the footer — appears on every page and would collide with all three frameworks at once. Build shared-layout interactivity as an `.astro` component with plain JavaScript instead.
 
 ### The difference
 
@@ -115,7 +115,7 @@ An `.astro` component is an HTML template. It runs once on the server, emits fin
 components/
 ├── astro/                    # the majority live here
 │   ├── BaseHead.astro        # SEO meta tags
-│   ├── Header.astro
+│   ├── SideRail.astro        # floating icon nav, matched to the portfolio
 │   ├── ArticleCard.astro     # title, image, excerpt, link
 │   ├── AuthorBox.astro
 │   ├── TagList.astro         # plain links
@@ -264,6 +264,17 @@ npm run dev
 The tell is that the server HTML contains the component but the browser shows nothing after a moment. If clearing the cache does not fix it, the browser console will name the real error — `Invalid hook call`, a hydration mismatch, or something thrown inside the component.
 
 ---
+
+### Navigation
+
+Site navigation is a **floating icon rail** on the left, not a top header — copied from the portfolio's `components/navbar` so the two feel like one site once Knowly is served at `/blogs`.
+
+`SideRail.astro` mirrors the original's geometry: `fixed left-2 top-1/2 -translate-y-1/2`, a `rounded-full` pill with `bg-gray-900/90` and `backdrop-blur-xl`, 9×9 targets (11×11 from `sm`), the active item inverted to `bg-white text-gray-950`, and a tooltip that slides out on hover.
+
+Icons are inline SVG in lucide's style (stroke width 1.8, 18 px) rather than the `lucide` package. Three icons do not justify a dependency, and the component has to stay at **0 kB JavaScript**.
+
+> [!NOTE]
+> The rail currently lists Knowly's own routes. Once the site is served under the portfolio's `/blogs` ([D8](../docs/ARCHITECTURE.md)), it should list the portfolio's global navigation instead — otherwise a visitor who lands on the blog has no way back to Projects or About.
 
 ## Core Features
 

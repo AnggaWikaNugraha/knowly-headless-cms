@@ -1,0 +1,93 @@
+---
+import { portfolioNav, PORTFOLIO_URL } from '../../config/site';
+
+/**
+ * Rail navigasi tingkat portofolio.
+ *
+ * Bentuknya disalin dari `components/navbar` milik portofolio — geometri,
+ * blur, bayangan, dan tooltip-nya sama — supaya pengunjung tidak merasa
+ * berpindah situs saat masuk ke bagian blog.
+ *
+ * Isinya menunjuk keluar ke halaman portofolio, bukan ke halaman Knowly.
+ * Navigasi internal Knowly ada di SideNav, di kolom kiri halaman feed.
+ *
+ * Ikonnya SVG inline bergaya lucide (stroke 1.8, 18 px) alih-alih memasang
+ * paket `lucide`: lima ikon tidak sepadan dengan satu dependensi, dan
+ * komponen ini harus tetap 0 kB JavaScript.
+ */
+const path = Astro.url.pathname;
+
+// Blog dianggap aktif selama pengunjung berada di dalam Knowly.
+const isActive = (item: (typeof portfolioNav)[number]) => !item.external;
+
+const hrefFor = (item: (typeof portfolioNav)[number]) =>
+  item.external ? `${PORTFOLIO_URL}${item.href}` : item.href;
+---
+<nav
+  aria-label="Navigasi portofolio"
+  class="fixed left-2 top-1/2 z-50 flex -translate-y-1/2 flex-col gap-1 rounded-full border border-white/10 bg-gray-900/90 p-1 text-gray-400 shadow-2xl shadow-black/40 backdrop-blur-xl sm:left-4 sm:p-1.5 xl:left-6"
+>
+  {portfolioNav.map((item) => (
+    <a
+      href={hrefFor(item)}
+      aria-label={item.label}
+      aria-current={isActive(item) ? 'page' : undefined}
+      class:list={[
+        'group relative grid h-9 w-9 place-items-center rounded-full outline-none transition-all duration-200 focus-visible:ring-2 focus-visible:ring-white/70 sm:h-11 sm:w-11',
+        isActive(item)
+          ? 'bg-white text-gray-950 shadow-lg shadow-black/30'
+          : 'hover:bg-white/[0.08] hover:text-white',
+      ]}
+    >
+      <svg
+        class="h-[18px] w-[18px]"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        {item.icon === 'home' && (
+          <>
+            <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
+            <path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          </>
+        )}
+        {item.icon === 'projects' && (
+          <>
+            <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+            <path d="M8 10v4" /><path d="M12 10v2" /><path d="M16 10v6" />
+          </>
+        )}
+        {item.icon === 'blog' && (
+          <>
+            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+            <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+            <path d="M16 13H8" /><path d="M16 17H8" />
+          </>
+        )}
+        {item.icon === 'about' && (
+          <>
+            <circle cx="12" cy="8" r="5" />
+            <path d="M20 21a8 8 0 0 0-16 0" />
+          </>
+        )}
+        {item.icon === 'language' && (
+          <>
+            <path d="m5 8 6 6" /><path d="m4 14 6-6 2-3" /><path d="M2 5h12" /><path d="M7 2h1" />
+            <path d="m22 22-5-10-5 10" /><path d="M14 18h6" />
+          </>
+        )}
+      </svg>
+
+      <span
+        aria-hidden="true"
+        class="pointer-events-none absolute left-full ml-3 translate-x-1 whitespace-nowrap rounded-lg border border-white/10 bg-gray-900 px-2.5 py-1.5 text-xs font-medium text-gray-200 opacity-0 shadow-xl transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100"
+      >
+        {item.label}
+      </span>
+    </a>
+  ))}
+</nav>

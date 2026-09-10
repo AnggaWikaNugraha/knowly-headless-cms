@@ -26,7 +26,7 @@ const current = Number(Astro.params.page);
 const { items, pagination } = await getArticles(current, site.pageSize);
 ---
 <BaseLayout title={`Artikel — halaman ${current}`} description={`Semua artikel di ${site.name}.`} layout="feed">
-  <header class="mb-10">
+  <header class="feed-heading">
     <h1 class="text-3xl font-bold tracking-tight text-gray-50">Artikel</h1>
     <p class="mt-2 text-gray-400">{pagination.total} tulisan</p>
   </header>

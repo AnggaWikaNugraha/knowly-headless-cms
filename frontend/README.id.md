@@ -96,7 +96,7 @@ Tiga framework ini pilihan yang disengaja: keduanya mendemonstrasikan bahwa isla
 Angka-angka itu diukur dari hasil build, bukan diperkirakan. Itu juga alasan tiap framework ditempatkan di situ: halaman artikel adalah yang benar-benar dibaca pengunjung, jadi dia mendapat runtime paling ringan yang tersedia. React di halaman yang sama akan berbiaya sekitar empat kali lipat.
 
 > [!CAUTION]
-> Waspadai **island global**. Apa pun yang ada di header atau footer bersama — misalnya tombol navigasi mobile — akan muncul di semua halaman dan bertabrakan dengan ketiga framework sekaligus. Bangun interaktivitas di layout bersama sebagai komponen `.astro` dengan JavaScript biasa.
+> Waspadai **island global**. Apa pun yang ada di layout bersama — rail navigasi mengambang atau footer — akan muncul di semua halaman dan bertabrakan dengan ketiga framework sekaligus. Bangun interaktivitas di layout bersama sebagai komponen `.astro` dengan JavaScript biasa.
 
 ### Perbedaannya
 
@@ -115,7 +115,7 @@ Komponen `.astro` adalah cetakan HTML. Dia jalan sekali di server, menghasilkan 
 components/
 ├── astro/                    # mayoritas ada di sini
 │   ├── BaseHead.astro        # meta tag SEO
-│   ├── Header.astro
+│   ├── SideRail.astro        # nav ikon mengambang, disamakan dengan portofolio
 │   ├── ArticleCard.astro     # judul, gambar, excerpt, link
 │   ├── AuthorBox.astro
 │   ├── TagList.astro         # link biasa
@@ -264,6 +264,17 @@ npm run dev
 Cirinya: HTML dari server memuat komponennya, tapi browser menampilkan kosong beberapa saat kemudian. Kalau membersihkan cache tidak menolong, console browser akan menyebut error sebenarnya — `Invalid hook call`, ketidakcocokan hidrasi, atau sesuatu yang dilempar di dalam komponennya.
 
 ---
+
+### Navigasi
+
+Navigasi situs berupa **rail ikon mengambang** di sisi kiri, bukan header atas — disalin dari `components/navbar` milik portofolio supaya keduanya terasa satu situs begitu Knowly disajikan di `/blogs`.
+
+`SideRail.astro` meniru geometri aslinya: `fixed left-2 top-1/2 -translate-y-1/2`, pil `rounded-full` dengan `bg-gray-900/90` dan `backdrop-blur-xl`, target 9×9 (11×11 mulai `sm`), item aktif dibalik jadi `bg-white text-gray-950`, dan tooltip yang menggeser keluar saat hover.
+
+Ikonnya SVG inline bergaya lucide (stroke 1.8, 18 px), bukan paket `lucide`. Tiga ikon tidak sepadan dengan satu dependensi, dan komponen ini harus tetap **0 kB JavaScript**.
+
+> [!NOTE]
+> Rail-nya untuk sekarang memuat route milik Knowly sendiri. Begitu situs ini disajikan di `/blogs` milik portofolio ([D8](../docs/ARCHITECTURE.id.md)), isinya sebaiknya diganti dengan navigasi global portofolio — kalau tidak, pengunjung yang mendarat di blog kehilangan jalan kembali ke Projects dan About.
 
 ## Fitur Utama
 

@@ -20,7 +20,7 @@ const { items: articles, pagination } = await getArticlesByAuthor(author.slug, 1
 const avatar = mediaUrl(author.avatar?.url);
 ---
 <BaseLayout title={author.name} description={author.bio ?? `Artikel oleh ${author.name}.`} image={avatar} layout="feed">
-  <header class="mb-12 flex items-start gap-5 border-b border-gray-700 pb-8">
+  <header class="feed-heading flex items-start gap-5">
     {avatar && (
       <img src={avatar} alt={author.avatar?.alternativeText ?? author.name} width="72" height="72"
            onerror="this.remove()" class="h-18 w-18 rounded-full object-cover" />

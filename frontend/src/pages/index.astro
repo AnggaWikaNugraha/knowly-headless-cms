@@ -1,8 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import FeaturedArticle from '../components/astro/FeaturedArticle.astro';
 import ArticleList from '../components/astro/ArticleList.astro';
-import SectionLabel from '../components/astro/SectionLabel.astro';
+import FeedTabs from '../components/astro/FeedTabs.astro';
 import EmptyState from '../components/astro/EmptyState.astro';
 import ErrorState from '../components/astro/ErrorState.astro';
 import { getFeaturedArticles, getLatestArticles } from '../services/strapi/articles';
@@ -28,26 +27,20 @@ try {
 }
 ---
 <BaseLayout title={site.name} description={site.description} layout="feed">
-  <section class="mb-10 max-w-xl">
-    <h1 class="text-lg font-medium leading-snug text-gray-300">{site.tagline}</h1>
-  </section>
+  <header class="feed-heading">
+    <h1>Ruang untuk <span class="heading-muted">ide baru.</span></h1>
+    <p>{site.tagline}.</p>
+  </header>
+  <FeedTabs />
 
   {failed && <ErrorState />}
 
   {!failed && hero && (
-    <section class="mb-12 border-b border-gray-800 pb-12">
-      <FeaturedArticle article={hero} />
-    </section>
+    <ArticleList articles={[hero, ...others]} />
   )}
 
   {!failed && !hero && (
     <EmptyState title="Belum ada tulisan" description="Artikel yang diterbitkan akan muncul di sini." />
   )}
 
-  {!failed && others.length > 0 && (
-    <section>
-      <SectionLabel title="Tulisan lain" href="/articles" />
-      <ArticleList articles={others} />
-    </section>
-  )}
 </BaseLayout>

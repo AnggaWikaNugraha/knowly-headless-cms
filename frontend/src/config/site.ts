@@ -20,3 +20,27 @@ export const nav = [
   { label: 'Artikel', href: '/articles' },
   { label: 'Cari', href: '/search' },
 ] as const;
+
+/**
+ * Base URL portofolio. Kosong saat Knowly disajikan di bawah domain yang sama
+ * lewat rewrite `/blogs` (D8) — tautannya jadi relatif dan langsung benar.
+ * Diisi hanya saat menjalankan Knowly berdiri sendiri, supaya rail tetap
+ * mengarah ke portofolio yang sudah live alih-alih ke 404 lokal.
+ */
+export const PORTFOLIO_URL = import.meta.env.PUBLIC_PORTFOLIO_URL ?? '';
+
+/**
+ * Navigasi tingkat portofolio — isinya menyalin `components/navbar` di sana.
+ *
+ * Ini BUKAN navigasi Knowly. Rail ini membawa pengunjung keluar ke halaman
+ * portofolio; navigasi internal Knowly ada di header dan SideNav.
+ */
+export const portfolioNav = [
+  { label: 'Home', href: '/', icon: 'home', external: true },
+  { label: 'Projects', href: '/pages/projects', icon: 'projects', external: true },
+  // Selama Knowly berdiri sendiri, Blog menunjuk ke akar Knowly. Setelah
+  // rewrite /blogs dipasang di portofolio (D8), ini menjadi '/blogs'.
+  { label: 'Blog', href: '/', icon: 'blog', external: false },
+  { label: 'About', href: '/pages/about', icon: 'about', external: true },
+  { label: 'Language', href: '/pages/language', icon: 'language', external: true },
+] as const;

@@ -200,7 +200,7 @@ Measured allocation:
 Those figures are measured from the build output, not estimated. They are also the reason each framework sits where it does: the article page is the one visitors actually read, so it gets the lightest runtime available. React on that page would cost roughly four times as much.
 
 > [!CAUTION]
-> Watch for **global islands**. Anything in the shared header or footer — a mobile navigation toggle, for instance — appears on every page and would collide with all three frameworks at once. Build shared-layout interactivity as an `.astro` component with plain JavaScript instead.
+> Watch for **global islands**. Anything in the shared layout — the floating navigation rail or the footer — appears on every page and would collide with all three frameworks at once. Build shared-layout interactivity as an `.astro` component with plain JavaScript instead.
 
 ### Hydration directives
 
@@ -382,7 +382,7 @@ root/
 frontend/
 └── src/
     ├── components/
-    │   ├── astro/          # 14 components, 0 kB JS
+    │   ├── astro/          # 13 components, 0 kB JS
     │   ├── react/          # SearchBox.tsx      → /search
     │   ├── vue/            # ArticleFilter.vue  → /articles
     │   └── svelte/         # ReadingTools.svelte → /articles/[slug]

@@ -200,7 +200,7 @@ Pembagian terukur:
 Angka-angka itu diukur dari hasil build, bukan diperkirakan. Itu juga alasan tiap framework ditempatkan di situ: halaman artikel adalah yang benar-benar dibaca pengunjung, jadi dia mendapat runtime paling ringan yang tersedia. React di halaman yang sama akan berbiaya sekitar empat kali lipat.
 
 > [!CAUTION]
-> Waspadai **island global**. Apa pun yang ada di header atau footer bersama — misalnya tombol navigasi mobile — akan muncul di semua halaman dan bertabrakan dengan ketiga framework sekaligus. Bangun interaktivitas di layout bersama sebagai komponen `.astro` dengan JavaScript biasa.
+> Waspadai **island global**. Apa pun yang ada di layout bersama — rail navigasi mengambang atau footer — akan muncul di semua halaman dan bertabrakan dengan ketiga framework sekaligus. Bangun interaktivitas di layout bersama sebagai komponen `.astro` dengan JavaScript biasa.
 
 ### Directive hidrasi
 
@@ -382,7 +382,7 @@ root/
 frontend/
 └── src/
     ├── components/
-    │   ├── astro/          # 14 components, 0 kB JS
+    │   ├── astro/          # 13 components, 0 kB JS
     │   ├── react/          # SearchBox.tsx      → /search
     │   ├── vue/            # ArticleFilter.vue  → /articles
     │   └── svelte/         # ReadingTools.svelte → /articles/[slug]

@@ -1,0 +1,13 @@
+---
+const path = Astro.url.pathname;
+const links = [
+  { href: '/', label: 'Untuk Anda' },
+  { href: '/articles', label: 'Semua artikel' },
+  { href: '/search', label: 'Cari' },
+];
+---
+<nav class="feed-tabs" aria-label="Pilihan bacaan">
+  {links.map(({ href, label }) => (
+    <a href={href} aria-current={path === href ? 'page' : undefined}>{label}</a>
+  ))}
+</nav>

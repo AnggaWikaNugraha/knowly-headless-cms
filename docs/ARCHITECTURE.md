@@ -113,7 +113,7 @@ fullstack-headless-cms/
 ├── frontend/                          # Astro
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── astro/                 # 14 components — 0 kB JS
+│   │   │   ├── astro/                 # 13 components — 0 kB JS
 │   │   │   ├── react/SearchBox.tsx    # /search island
 │   │   │   ├── vue/ArticleFilter.vue  # /articles island
 │   │   │   └── svelte/ReadingTools.svelte   # /articles/[slug] island
@@ -296,7 +296,7 @@ Astro owns every page, layout, and content component. A framework island appears
 Those figures are measured from the build output, not estimated. They are also the reason each framework sits where it does: the article page is the one visitors actually read, so it gets the lightest runtime available. React on that page would cost roughly four times as much.
 
 > [!CAUTION]
-> Nothing in the shared header or footer may be a framework island. A mobile-nav toggle built in React would land on all seven pages and collide with Vue and Svelte. Shared-layout interactivity is an `.astro` component with plain JavaScript.
+> Nothing in the shared layout may be a framework island. A navigation rail built in React would land on every page and collide with Vue and Svelte. Shared-layout interactivity is an `.astro` component with plain JavaScript.
 
 Pagination stays server-rendered `<a href="/articles/2">` — crawlable, works without JavaScript, and needs no island.
 

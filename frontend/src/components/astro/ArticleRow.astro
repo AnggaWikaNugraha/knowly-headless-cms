@@ -1,65 +1,44 @@
 ---
 import { mediaUrl } from '../../services/strapi/client';
-import { formatDate } from '../../utils/date';
+import { formatDate, readingTime } from '../../utils/date';
 import type { Article } from '../../types/strapi';
 
-/**
- * Baris feed bergaya Medium: teks di kiri, thumbnail di kanan.
- * Thumbnail disembunyikan di layar sempit supaya judul tetap punya ruang.
- */
 interface Props { article: Article; }
 const { article } = Astro.props;
 const href = `/articles/${article.slug}`;
 const thumb = mediaUrl(article.coverImage?.url);
 const avatar = mediaUrl(article.author?.avatar?.url);
 ---
-<article class="group flex items-start gap-5 py-7 sm:gap-8">
-  <div class="min-w-0 flex-1">
-    <div class="flex items-center gap-2 text-xs text-gray-400">
-      {avatar
-        ? <img src={avatar} alt="" width="20" height="20" loading="lazy" onerror="this.remove()" class="h-5 w-5 rounded-full object-cover" />
-        : <span class="grid h-5 w-5 place-items-center rounded-full bg-gray-700 text-[10px] font-semibold text-gray-300">
-            {article.author?.name?.[0] ?? '?'}
-          </span>}
-      {article.author && (
-        <a href={`/authors/${article.author.slug}`} class="text-gray-300 hover:text-gray-100">{article.author.name}</a>
-      )}
-      <span aria-hidden="true">·</span>
-      <time datetime={article.publishedAt ?? undefined}>{formatDate(article.publishedAt)}</time>
-    </div>
-
-    <h3 class="mt-2 text-lg font-bold leading-snug text-gray-50 sm:text-xl">
-      <a href={href} class="line-clamp-2">{article.title}</a>
-    </h3>
-
-    <p class="mt-1.5 line-clamp-2 text-sm leading-relaxed text-gray-400">{article.excerpt}</p>
-
-    <div class="mt-4 flex flex-wrap items-center gap-2 text-xs text-gray-500">
-      {article.category && (
-        <a href={`/categories/${article.category.slug}`} class="rounded-full bg-gray-800/70 px-2.5 py-1 text-gray-400 transition-colors hover:bg-gray-700 hover:text-gray-100">
-          {article.category.name}
-        </a>
-      )}
-      {article.tags.slice(0, 2).map((t) => (
-        <a href={`/tags/${t.slug}`} class="transition-colors hover:text-gray-300">#{t.name}</a>
-      ))}
-    </div>
-  </div>
-
-  <a href={href} class="hidden h-[9rem] w-[13rem] shrink-0 rounded bg-gradient-to-br from-gray-800 to-gray-900 sm:block">
-    {thumb ? (
-      <img
-        src={thumb}
-        alt={article.coverImage?.alternativeText ?? ''}
-        width="200"
-        height="134"
-        loading="lazy"
-        decoding="async"
-        onerror="this.remove()"
-        class="h-[9rem] w-[13rem] rounded object-cover"
-      />
-    ) : (
-      <div class="h-[9rem] w-[13rem] rounded bg-gradient-to-br from-gray-800 to-gray-900" />
+<article class:list={['story-row', { 'story-row--with-image': !!thumb }]}>
+  <div class="story-byline">
+    {article.author && (
+      <a href={`/authors/${article.author.slug}`} class="story-author">
+        <span class="story-avatar">
+          {article.author.name.charAt(0)}
+          {avatar && <img src={avatar} alt="" width="24" height="24" loading="lazy" onerror="this.remove()" />}
+        </span>
+        <span>{article.author.name}</span>
+      </a>
     )}
-  </a>
+    {article.author && article.publishedAt && <span aria-hidden="true">·</span>}
+    {article.publishedAt && <time datetime={article.publishedAt}>{formatDate(article.publishedAt)}</time>}
+  </div>
+  <div class="story-copy">
+    <h2 class="story-title"><a href={href}>{article.title}</a></h2>
+    <p class="story-excerpt">{article.excerpt}</p>
+  </div>
+  {thumb && (
+    <a href={href} class="story-thumbnail" tabindex="-1" aria-hidden="true">
+      <img src={thumb} alt="" width="240" height="160" loading="lazy" decoding="async" onerror="this.closest('article').classList.remove('story-row--with-image');this.closest('a').remove()" />
+    </a>
+  )}
+  <div class="story-footer">
+    <div class="story-details">
+      {article.category && <a href={`/categories/${article.category.slug}`} class="story-category">{article.category.name}</a>}
+      <span>{readingTime(article.content)} menit baca</span>
+    </div>
+    <a href={href} class="story-read" aria-label={`Baca ${article.title}`} title="Baca artikel">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+    </a>
+  </div>
 </article>

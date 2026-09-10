@@ -113,7 +113,7 @@ fullstack-headless-cms/
 ├── frontend/                          # Astro
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── astro/                 # 14 komponen — 0 kB JS
+│   │   │   ├── astro/                 # 13 komponen — 0 kB JS
 │   │   │   ├── react/SearchBox.tsx    # island /search
 │   │   │   ├── vue/ArticleFilter.vue  # island /articles
 │   │   │   └── svelte/ReadingTools.svelte   # island /articles/[slug]
@@ -296,7 +296,7 @@ Astro memegang setiap halaman, layout, dan komponen konten. Island framework han
 Angka-angka itu diukur dari hasil build, bukan diperkirakan. Itu juga alasan tiap framework ditempatkan di situ: halaman artikel adalah yang benar-benar dibaca pengunjung, jadi dia mendapat runtime paling ringan yang tersedia. React di halaman yang sama akan berbiaya sekitar empat kali lipat.
 
 > [!CAUTION]
-> Tidak boleh ada island framework di header atau footer bersama. Tombol navigasi mobile yang dibuat dengan React akan mendarat di ketujuh halaman dan bertabrakan dengan Vue serta Svelte. Interaktivitas di layout bersama dibuat sebagai komponen `.astro` dengan JavaScript biasa.
+> Tidak boleh ada island framework di layout bersama. Rail navigasi yang dibuat dengan React akan mendarat di semua halaman dan bertabrakan dengan Vue serta Svelte. Interaktivitas di layout bersama dibuat sebagai komponen `.astro` dengan JavaScript biasa.
 
 Pagination tetap `<a href="/articles/2">` yang dirender server — bisa di-crawl, jalan tanpa JavaScript, dan tidak butuh island.
 

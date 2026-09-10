@@ -1,8 +1,7 @@
 ---
 import '../styles/global.css';
 import BaseHead from '../components/astro/BaseHead.astro';
-import Header from '../components/astro/Header.astro';
-import Footer from '../components/astro/Footer.astro';
+import SideRail from '../components/astro/SideRail.astro';
 import SideNav from '../components/astro/SideNav.astro';
 import TopicRail from '../components/astro/TopicRail.astro';
 import { site } from '../config/site';
@@ -36,14 +35,16 @@ const { layout = 'plain', ...head } = Astro.props;
     <BaseHead {...head} />
   </head>
   <body class="flex min-h-screen flex-col antialiased">
-    <Header />
+    <a href="#main-content" class="skip-link">Langsung ke konten</a>
+    <SideRail />
 
-    <main class="flex-1 bg-gradient-to-b from-gray-900 to-gray-800 px-4 py-10">
+    <div class="site-shell flex min-h-screen flex-col">
+      <main id="main-content" class:list={['flex-1 bg-gradient-to-b from-gray-900 to-gray-800', layout === 'feed' ? 'feed-main' : 'reading-main']}>
       {layout === 'feed' && (
-        <div class="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[13rem_minmax(0,1fr)_16rem] lg:gap-12">
-          <aside class="hidden lg:block"><div class="sticky top-8"><SideNav /></div></aside>
-          <div class="min-w-0"><slot /></div>
-          <aside class="hidden lg:block"><div class="sticky top-8"><TopicRail /></div></aside>
+        <div class="feed-layout">
+          <aside class="feed-navigation"><div class="feed-sticky"><SideNav /></div></aside>
+          <div class="feed-content"><slot /></div>
+          <aside class="feed-topics"><div class="feed-sticky"><TopicRail /></div></aside>
         </div>
       )}
 
@@ -61,8 +62,8 @@ const { layout = 'plain', ...head } = Astro.props;
       )}
 
       {layout === 'plain' && <div class="mx-auto max-w-3xl"><slot /></div>}
-    </main>
+      </main>
 
-    <Footer />
+    </div>
   </body>
 </html>
